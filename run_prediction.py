@@ -26,6 +26,7 @@ from config import (SECTORS, BROAD_MARKET, US_MARKETS, EUROPE_MARKETS, ASIA_MARK
                     CHINA_JAPAN_DETAIL)
 from features import fetch_data, fetch_global_snapshot, build_ta_features, create_targets, prepare_ml_dataset
 from lstm_model import MarketPredictor
+from news_sentiment import get_news_sentiment
 
 
 def train_all_models():
@@ -134,6 +135,19 @@ def run_predictions():
         except:
             pass
 
+    # 2b. News & Social Sentiment Analysis
+    print("\n[3/5] Analyzing News & Social Sentiment...")
+    try:
+        sentiment_data = get_news_sentiment()
+    except Exception as e:
+        print(f"  ⚠ Sentiment analysis failed: {e}")
+        sentiment_data = {
+            'overall': 0, 'overall_label': 'NO DATA',
+            'sectors': {}, 'top_headlines': [],
+            'geo_events': [], 'social_sentiment': 0,
+            'total_articles': 0,
+        }
+
     # 3. ML predictions for each stock
     print("\n[4/5] Running ML Predictions...")
     ml_predictions = {}
@@ -227,8 +241,15 @@ def run_predictions():
         avg_ml_score = np.mean(ml_scores) if ml_scores else 0
         avg_ml_mag = np.mean(ml_mags) if ml_mags else 0
 
-        # Ensemble: 40% Global + 60% ML (ML weighted higher since it's data-driven)
-        composite = 0.4 * global_normalized + 0.6 * avg_ml_score
+        # News sentiment score for this sector
+        sector_sent = sentiment_data.get('sectors', {}).get(sector_name, {})
+        sentiment_score = sector_sent.get('score', 0) if sector_sent else 0
+        # If no sector-specific sentiment, fall back to overall
+        if sentiment_score == 0 and sentiment_data.get('overall', 0) != 0:
+            sentiment_score = sentiment_data['overall'] * 0.5  # Halve the overall as it's less specific
+
+        # Ensemble: 35% Global + 45% ML + 20% Sentiment
+        composite = 0.35 * global_normalized + 0.45 * avg_ml_score + 0.20 * sentiment_score
 
         # Determine prediction
         if composite > 2: prediction, action = 'STRONG BUY', 'BUY'
@@ -255,6 +276,7 @@ def run_predictions():
             'composite_score': round(composite, 2),
             'global_score': round(global_normalized, 2),
             'ml_score': round(avg_ml_score, 2),
+            'sentiment_score': round(sentiment_score, 2),
             'expected_magnitude': round(avg_ml_mag, 3),
             'confidence': round(confidence, 0),
             'model_accuracy': round(avg_model_acc * 100, 1),
@@ -276,18 +298,20 @@ def run_predictions():
         mag_str = f"{mag:+.2f}%" if mag != 0 else "N/A"
         print(f"  {icon} {s['sector']:<28} {s['action']:<18} Score: {s['composite_score']:>+6.2f} "
               f"| ML: {s['ml_score']:>+5.2f} | Global: {s['global_score']:>+5.2f} "
-              f"| Exp: {mag_str} | Acc: {s['model_accuracy']:.0f}%")
+              f"| News: {s['sentiment_score']:>+5.2f} | Exp: {mag_str} | Acc: {s['model_accuracy']:.0f}%")
 
     # Generate HTML report
-    generate_html_report(sector_results, global_data, broad_data, china_japan_data)
+    generate_html_report(sector_results, global_data, broad_data, china_japan_data, sentiment_data)
 
     return sector_results
 
 
-def generate_html_report(sectors_data, global_data, broad_data, china_japan_data=None):
+def generate_html_report(sectors_data, global_data, broad_data, china_japan_data=None, sentiment_data=None):
     """Generate professional industry-standard HTML dashboard."""
     if china_japan_data is None:
         china_japan_data = {}
+    if sentiment_data is None:
+        sentiment_data = {'overall': 0, 'overall_label': 'NO DATA', 'sectors': {}, 'top_headlines': [], 'geo_events': [], 'social_sentiment': 0, 'total_articles': 0}
 
     now = datetime.now()
     report_date = now.strftime('%A, %B %d, %Y')
@@ -368,6 +392,31 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
         d = all_map_data.get(name)
         if d:
             map_pins_html += map_pin_html(name, x, y, d)
+
+    # ---------- News & Sentiment section ----------
+    sent_overall = sentiment_data.get('overall', 0)
+    sent_label = sentiment_data.get('overall_label', 'NO DATA')
+    sent_social = sentiment_data.get('social_sentiment', 0)
+    sent_articles = sentiment_data.get('total_articles', 0)
+    sent_color = '#0e7c6b' if sent_overall > 0.5 else ('#dc2646' if sent_overall < -0.5 else '#b45309')
+
+    # Top headlines HTML
+    headlines_html = ''
+    for h in sentiment_data.get('top_headlines', [])[:10]:
+        hc = '#0e7c6b' if h['sentiment'] > 0.5 else ('#dc2646' if h['sentiment'] < -0.5 else '#b45309')
+        src = h.get('source', '')
+        src_html = f'<span class="news-src">{src}</span>' if src else ''
+        headlines_html += f'''<div class="news-item">
+            <span class="news-sent" style="color:{hc}">{h["sentiment"]:+.1f}</span>
+            <span class="news-title">{h["title"][:90]}</span>
+            {src_html}
+        </div>'''
+
+    # Geo events HTML
+    geo_html = ''
+    for ge in sentiment_data.get('geo_events', []):
+        gc = '#dc2646' if ge['type'] == 'bearish' else '#0e7c6b'
+        geo_html += f'<span class="geo-tag" style="--gc:{gc}">{ge["event"].upper()} ({ge["impact"]:+.1f})</span>'
 
     # ---------- Market table rows ----------
     def mkt_table_rows(markets_dict, source_data):
@@ -459,6 +508,7 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
 
         gs_c = val_color(s['global_score'])
         ml_c = val_color(s['ml_score'])
+        sn_c = val_color(s.get('sentiment_score', 0))
         mg_c = val_color(mag)
 
         sector_cards_html += f"""
@@ -479,6 +529,7 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
             <div class="kpi-row">
                 <div class="kpi"><span class="kpi-label">Global</span><span class="kpi-val" style="color:{gs_c}">{s['global_score']:+.2f}</span></div>
                 <div class="kpi"><span class="kpi-label">ML Score</span><span class="kpi-val" style="color:{ml_c}">{s['ml_score']:+.2f}</span></div>
+                <div class="kpi"><span class="kpi-label">News</span><span class="kpi-val" style="color:{sn_c}">{s.get('sentiment_score', 0):+.2f}</span></div>
                 <div class="kpi kpi-main"><span class="kpi-label">Composite</span><span class="kpi-val" style="color:{ac};font-size:1.25rem">{s['composite_score']:+.2f}</span></div>
                 <div class="kpi"><span class="kpi-label">Exp. Move</span><span class="kpi-val" style="color:{mg_c}">{mag:+.2f}%</span></div>
                 <div class="kpi"><span class="kpi-label">Model Acc</span><span class="kpi-val">{s['model_accuracy']:.0f}%</span></div>
@@ -578,7 +629,7 @@ body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg
 .map-legend-dot{{width:8px;height:8px;border-radius:50%}}
 
 /* Summary */
-.summary-row{{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}}
+.summary-row{{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}}
 @media(max-width:900px){{.summary-row{{grid-template-columns:1fr 1fr}}}}
 @media(max-width:500px){{.summary-row{{grid-template-columns:1fr}}}}
 .summary-card{{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);transition:box-shadow .25s}}
@@ -646,8 +697,8 @@ body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg
 .deep-badge{{padding:10px 16px;border-radius:var(--radius-sm);text-align:center;background:var(--bg-page);border:1.5px solid var(--sig)}}
 .badge-action{{display:block;font-size:.88rem;font-weight:700;color:var(--sig)}}
 .badge-label{{display:block;font-size:.6rem;color:var(--text-muted);margin-top:2px}}
-.kpi-row{{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:18px}}
-@media(max-width:600px){{.kpi-row{{grid-template-columns:repeat(3,1fr)}}}}
+.kpi-row{{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:18px}}
+@media(max-width:600px){{.kpi-row{{grid-template-columns:repeat(4,1fr)}}}}
 .kpi{{background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center}}
 .kpi-main{{border-color:var(--accent);background:var(--accent-light)}}
 .kpi-label{{display:block;font-size:.56rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}}
@@ -663,6 +714,25 @@ body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg
 .dtable tbody tr{{transition:background .15s}}
 .dtable tbody tr:hover{{background:var(--bg-hover)}}
 .td-muted{{color:var(--text-muted)}}
+
+/* News & Sentiment */
+.news-section{{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px;box-shadow:var(--shadow)}}
+.news-section h2{{font-size:1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;color:var(--text)}}
+.news-grid{{display:grid;grid-template-columns:280px 1fr;gap:20px}}
+@media(max-width:768px){{.news-grid{{grid-template-columns:1fr}}}}
+.news-stats{{display:flex;flex-direction:column;gap:12px}}
+.news-stat{{background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center}}
+.news-stat-label{{font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}}
+.news-stat-val{{font-size:1.3rem;font-weight:700;margin-top:4px}}
+.news-stat-meta{{font-size:.7rem;color:var(--text-secondary);margin-top:2px}}
+.news-feed{{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto}}
+.news-item{{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);font-size:.78rem;transition:background .15s}}
+.news-item:hover{{background:var(--bg-hover)}}
+.news-sent{{flex-shrink:0;font-weight:700;font-size:.75rem;width:40px;text-align:center}}
+.news-title{{color:var(--text);flex:1;line-height:1.4}}
+.news-src{{flex-shrink:0;font-size:.65rem;color:var(--text-muted);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.geo-tags{{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}}
+.geo-tag{{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:.68rem;font-weight:600;color:var(--gc);background:rgba(0,0,0,.03);border:1px solid var(--gc)}}
 
 /* Footer */
 .disclaimer{{background:var(--bg);border:1px solid #fde68a;border-radius:var(--radius-sm);padding:16px 20px;margin-top:28px;display:flex;align-items:flex-start;gap:10px;box-shadow:var(--shadow)}}
@@ -703,7 +773,7 @@ body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg
 <div class="header reveal">
     <div style="display:flex;align-items:center;gap:14px">
         <h1>The Market</h1>
-        <span class="tag tag-ml">{svg_cpu} LSTM + XGBoost</span>
+        <span class="tag tag-ml">{svg_cpu} LSTM + XGBoost + Sentiment</span>
         <span class="tag tag-live"><span class="live-dot"></span> Live</span>
     </div>
     <div class="header-right">
@@ -758,9 +828,42 @@ body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg
         <div class="summary-meta" style="color:{vix_color}">{vix_status} ({vix_chg:+.1f}%)</div>
     </div>
     <div class="summary-card">
+        <div class="summary-label">News Sentiment</div>
+        <div class="summary-value" style="color:{sent_color}">{sent_label}</div>
+        <div class="summary-meta">{sent_articles} articles &middot; Score: {sent_overall:+.2f}</div>
+    </div>
+    <div class="summary-card">
         <div class="summary-label">ML Accuracy</div>
         <div class="summary-value" style="color:var(--accent)">{avg_acc:.0f}%</div>
         <div class="summary-meta">Best: {max_acc:.0f}% &middot; {len(all_accs)} models</div>
+    </div>
+</div>
+
+<!-- NEWS & SENTIMENT -->
+<div class="news-section reveal reveal-d2">
+    <h2>{svg_activity} News &amp; Sentiment Analysis</h2>
+    <div class="news-grid">
+        <div class="news-stats">
+            <div class="news-stat">
+                <div class="news-stat-label">Overall Sentiment</div>
+                <div class="news-stat-val" style="color:{sent_color}">{sent_overall:+.2f}</div>
+                <div class="news-stat-meta" style="color:{sent_color}">{sent_label}</div>
+            </div>
+            <div class="news-stat">
+                <div class="news-stat-label">Social Sentiment</div>
+                <div class="news-stat-val" style="color:{val_color(sent_social)}">{sent_social:+.2f}</div>
+                <div class="news-stat-meta">Reddit &amp; Forums</div>
+            </div>
+            <div class="news-stat">
+                <div class="news-stat-label">Articles Analyzed</div>
+                <div class="news-stat-val">{sent_articles}</div>
+                <div class="news-stat-meta">Google News + Reddit</div>
+            </div>
+            {f'<div class="geo-tags">{geo_html}</div>' if geo_html else ''}
+        </div>
+        <div class="news-feed">
+            {headlines_html if headlines_html else '<div style="padding:20px;text-align:center;color:var(--text-muted)">No news data available</div>'}
+        </div>
     </div>
 </div>
 
@@ -790,7 +893,7 @@ body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg
     {svg_alert}
     <p><strong>Disclaimer:</strong> ML-based analysis for educational purposes only. Models trained on historical data cannot predict black-swan events. Consult a SEBI-registered advisor.</p>
 </div>
-<div class="footer">v5 &middot; LSTM + XGBoost Ensemble &middot; TradingView Data &middot; TensorFlow + scikit-learn</div>
+<div class="footer">v6 &middot; LSTM + XGBoost + News Sentiment &middot; TradingView Data &middot; TensorFlow + scikit-learn</div>
 
 </div></div>
 
