@@ -13,28 +13,22 @@
   --radius:10px;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
-a{color:var(--accent);text-decoration:none}
 
-/* Top bar */
 .topbar{background:#fff;border-bottom:1px solid var(--border);padding:8px 24px;display:flex;justify-content:space-between;align-items:center;font-size:.82rem;position:sticky;top:0;z-index:100}
 .topbar-tickers{display:flex;gap:20px;flex-wrap:wrap}
-.topbar-tickers span{white-space:nowrap}
 .topbar-right{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.75rem}
 #status-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block}
 #status-dot.live{background:var(--green);box-shadow:0 0 6px var(--green)}
-#status-dot.error{background:var(--red)}
+#status-dot.err{background:var(--red)}
 
-/* Layout */
 .container{max-width:1320px;margin:0 auto;padding:20px 24px}
 .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
 .header h1{font-size:1.6rem;font-weight:700;letter-spacing:-.02em}
-.header-tags{display:flex;gap:8px;align-items:center}
-.tag{font-size:.7rem;padding:3px 10px;border-radius:20px;font-weight:600;letter-spacing:.02em}
+.tag{font-size:.7rem;padding:3px 10px;border-radius:20px;font-weight:600}
 .tag-live{background:var(--green-light);color:var(--green)}
-.tag-live .dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;animation:pulse 2s infinite}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* Cards */
 .grid{display:grid;gap:16px}
 .g2{grid-template-columns:repeat(2,1fr)}
 .g3{grid-template-columns:repeat(3,1fr)}
@@ -46,66 +40,48 @@ a{color:var(--accent);text-decoration:none}
 .card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
 .card-title{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;font-weight:600}
 
-/* Summary cards */
 .summary-val{font-size:1.8rem;font-weight:700;letter-spacing:-.02em}
 .summary-sub{font-size:.78rem;color:var(--muted);margin-top:2px}
 
-/* Sector cards */
-.sector-card{cursor:default}
 .sector-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .sector-name{font-size:.95rem;font-weight:700}
 .sector-badge{font-size:.72rem;padding:2px 8px;border-radius:12px;font-weight:600}
-.sector-badge.up{background:var(--green-light);color:var(--green)}
-.sector-badge.down{background:var(--red-light);color:var(--red)}
-.sector-badge.flat{background:#f3f4f6;color:var(--muted)}
+.badge-up{background:var(--green-light);color:var(--green)}
+.badge-down{background:var(--red-light);color:var(--red)}
+.badge-flat{background:#f3f4f6;color:var(--muted)}
 
-/* Stock rows inside sector */
 .stock-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid #f3f4f6;font-size:.82rem}
 .stock-row:first-child{border-top:none}
 .stock-name{font-weight:500;flex:1}
 .stock-price{color:var(--muted);margin-right:12px;font-variant-numeric:tabular-nums}
 .stock-chg{font-weight:600;min-width:70px;text-align:right;font-variant-numeric:tabular-nums}
-.up-text{color:var(--green)}.down-text{color:var(--red)}
 
-/* Market tables */
-.market-table{width:100%;border-collapse:collapse;font-size:.82rem}
-.market-table th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:2px solid var(--border);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
-.market-table td{padding:8px;border-bottom:1px solid #f3f4f6;font-variant-numeric:tabular-nums}
-.market-table tr:hover{background:#fafbfc}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem}
+.tbl th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:2px solid var(--border);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.tbl td{padding:8px;border-bottom:1px solid #f3f4f6;font-variant-numeric:tabular-nums}
+.tbl tr:hover{background:#fafbfc}
 
-/* Section title */
 .section{margin-top:32px}
-.section-title{font-size:1.1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.section-title .icon{width:20px;height:20px;fill:var(--accent)}
+.section-title{font-size:1.1rem;font-weight:700;margin-bottom:16px}
 
-/* World map SVG */
-.map-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.map-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:8px;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .map-wrap svg{width:100%;height:auto;opacity:.15}
 .map-pins{position:absolute;top:0;left:0;width:100%;height:100%}
 .map-pin{position:absolute;width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transform:translate(-50%,-50%)}
 
-/* Refresh button */
 .btn{padding:6px 16px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;color:var(--text)}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
-.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-.btn-primary:hover{background:#0a6b5c}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 
-/* Loading shimmer */
-.loading{position:relative;overflow:hidden}
-.loading::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);animation:shimmer 1.5s infinite}
-@keyframes shimmer{100%{left:100%}}
-
-/* Footer */
+.up{color:var(--green)}.dn{color:var(--red)}
 .footer{text-align:center;padding:32px 0;color:var(--muted);font-size:.75rem;border-top:1px solid var(--border);margin-top:40px}
+.loading-msg{text-align:center;padding:60px 20px;color:var(--muted);font-size:1rem}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-tickers" id="topbar-tickers">
-    <span>Loading market data...</span>
-  </div>
+  <div class="topbar-tickers" id="topbar">Loading...</div>
   <div class="topbar-right">
     <span id="status-dot"></span>
     <span id="status-text">Connecting...</span>
@@ -115,19 +91,14 @@ a{color:var(--accent);text-decoration:none}
 </div>
 
 <div class="container">
-
-  <!-- HEADER -->
   <div class="header">
     <div style="display:flex;align-items:center;gap:14px">
       <h1>The Market</h1>
       <span class="tag tag-live"><span class="dot"></span> Live</span>
     </div>
-    <div class="header-tags">
-      <button class="btn" onclick="refreshData()">&#8635; Refresh</button>
-    </div>
+    <button class="btn" id="refreshBtn" onclick="loadAll()">&#8635; Refresh</button>
   </div>
 
-  <!-- SUMMARY CARDS -->
   <div class="grid g4" id="summary-cards">
     <div class="card"><div class="card-title">NIFTY 50</div><div class="summary-val" id="s-nifty">--</div><div class="summary-sub" id="s-nifty-chg">--</div></div>
     <div class="card"><div class="card-title">BANKNIFTY</div><div class="summary-val" id="s-bnifty">--</div><div class="summary-sub" id="s-bnifty-chg">--</div></div>
@@ -135,244 +106,279 @@ a{color:var(--accent);text-decoration:none}
     <div class="card"><div class="card-title">Market Mood</div><div class="summary-val" id="s-mood">--</div><div class="summary-sub" id="s-mood-sub">--</div></div>
   </div>
 
-  <!-- WORLD MAP -->
   <div class="section" style="margin-top:24px">
     <div class="map-wrap">
       <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
-        <!-- Simplified world map paths -->
-        <path d="M150,120 Q200,100 250,110 L280,130 Q260,160 230,170 L190,160 Q160,145 150,120Z" fill="var(--accent)"/><!-- NA -->
-        <path d="M220,180 Q250,200 260,240 L240,280 Q220,260 200,240 L210,200Z" fill="var(--accent)"/><!-- SA -->
-        <path d="M430,100 Q480,90 530,100 L540,140 Q510,160 470,155 L440,140Z" fill="var(--accent)"/><!-- Europe -->
-        <path d="M470,160 Q510,170 540,200 L530,250 Q500,240 470,220 L460,190Z" fill="var(--accent)"/><!-- Africa -->
-        <path d="M600,100 Q660,80 720,90 L750,120 Q740,150 700,160 L640,150 Q610,130 600,100Z" fill="var(--accent)"/><!-- Asia -->
-        <path d="M650,160 Q680,180 700,200 L690,230 Q660,220 640,200Z" fill="var(--accent)"/><!-- India -->
-        <path d="M780,220 Q820,240 840,270 L820,300 Q790,280 780,250Z" fill="var(--accent)"/><!-- Australia -->
+        <path d="M150,120 Q200,100 250,110 L280,130 Q260,160 230,170 L190,160 Q160,145 150,120Z" fill="var(--accent)"/>
+        <path d="M220,180 Q250,200 260,240 L240,280 Q220,260 200,240 L210,200Z" fill="var(--accent)"/>
+        <path d="M430,100 Q480,90 530,100 L540,140 Q510,160 470,155 L440,140Z" fill="var(--accent)"/>
+        <path d="M470,160 Q510,170 540,200 L530,250 Q500,240 470,220 L460,190Z" fill="var(--accent)"/>
+        <path d="M600,100 Q660,80 720,90 L750,120 Q740,150 700,160 L640,150 Q610,130 600,100Z" fill="var(--accent)"/>
+        <path d="M650,160 Q680,180 700,200 L690,230 Q660,220 640,200Z" fill="var(--accent)"/>
+        <path d="M780,220 Q820,240 840,270 L820,300 Q790,280 780,250Z" fill="var(--accent)"/>
       </svg>
       <div class="map-pins" id="map-pins"></div>
     </div>
   </div>
 
-  <!-- GLOBAL MARKETS -->
   <div class="section">
     <div class="section-title">Global Markets</div>
     <div class="grid g3">
-      <div class="card">
-        <div class="card-title">Americas</div>
-        <table class="market-table"><thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-americas"></tbody></table>
-      </div>
-      <div class="card">
-        <div class="card-title">Europe</div>
-        <table class="market-table"><thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-europe"></tbody></table>
-      </div>
-      <div class="card">
-        <div class="card-title">Asia Pacific</div>
-        <table class="market-table"><thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-asia"></tbody></table>
-      </div>
+      <div class="card"><div class="card-title">Americas</div><table class="tbl"><thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-am"></tbody></table></div>
+      <div class="card"><div class="card-title">Europe</div><table class="tbl"><thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-eu"></tbody></table></div>
+      <div class="card"><div class="card-title">Asia Pacific</div><table class="tbl"><thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-as"></tbody></table></div>
     </div>
   </div>
 
-  <!-- COMMODITIES & FX -->
   <div class="section">
     <div class="section-title">Commodities & FX</div>
     <div class="grid g3">
-      <div class="card">
-        <div class="card-title">Energy</div>
-        <table class="market-table"><thead><tr><th>Name</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-energy"></tbody></table>
-      </div>
-      <div class="card">
-        <div class="card-title">Metals</div>
-        <table class="market-table"><thead><tr><th>Name</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-metals"></tbody></table>
-      </div>
-      <div class="card">
-        <div class="card-title">Currency & Bonds</div>
-        <table class="market-table"><thead><tr><th>Name</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-fx"></tbody></table>
-      </div>
+      <div class="card"><div class="card-title">Energy</div><table class="tbl"><thead><tr><th>Name</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-en"></tbody></table></div>
+      <div class="card"><div class="card-title">Metals</div><table class="tbl"><thead><tr><th>Name</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-mt"></tbody></table></div>
+      <div class="card"><div class="card-title">Currency & Bonds</div><table class="tbl"><thead><tr><th>Name</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-fx"></tbody></table></div>
     </div>
   </div>
 
-  <!-- CHINA & JAPAN -->
   <div class="section">
     <div class="section-title">China & Japan Stocks</div>
-    <div class="card">
-      <table class="market-table"><thead><tr><th>Company</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-cj"></tbody></table>
-    </div>
+    <div class="card"><table class="tbl"><thead><tr><th>Company</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-cj"></tbody></table></div>
   </div>
 
-  <!-- SECTORS -->
   <div class="section">
     <div class="section-title">Indian Sectors</div>
     <div class="grid g2" id="sector-grid"></div>
   </div>
 
-  <div class="footer">
-    The Market Dashboard &mdash; Data from Yahoo Finance &mdash; Auto-refreshes every 60s<br>
-    Prices may be delayed. Not financial advice.
-  </div>
+  <div class="footer">The Market Dashboard &mdash; Auto-refreshes every 60s &mdash; Not financial advice.</div>
 </div>
 
 <script>
-const API = '/api/prices.php';
-let refreshTimer = null;
+// ── Symbol definitions ──
+const SYMBOLS = {
+  americas: {'^GSPC':'S&P 500','^IXIC':'NASDAQ','^DJI':'Dow Jones','^RUT':'Russell 2000'},
+  europe: {'^FTSE':'FTSE 100','^GDAXI':'DAX','^FCHI':'CAC 40'},
+  asia: {'^N225':'Nikkei 225','^TOPX':'TOPIX','^HSI':'Hang Seng','000001.SS':'Shanghai','399001.SZ':'Shenzhen','000300.SS':'CSI 300','^KS11':'KOSPI'},
+  energy: {'CL=F':'Crude Oil WTI','BZ=F':'Brent Crude','NG=F':'Natural Gas'},
+  metals: {'GC=F':'Gold','SI=F':'Silver','HG=F':'Copper'},
+  fx: {'USDINR=X':'USD/INR','^TNX':'US 10Y Yield','DX-Y.NYB':'Dollar Index'},
+  vix: {'^INDIAVIX':'India VIX','^VIX':'US VIX'},
+  broad: {'^NSEI':'NIFTY 50','^NSEBANK':'BANKNIFTY'},
+  china_japan: {'7203.T':'Toyota','6758.T':'Sony','9984.T':'SoftBank','6861.T':'Keyence','7974.T':'Nintendo','9988.HK':'Alibaba','1211.HK':'BYD','3690.HK':'Meituan','9618.HK':'JD.com','0700.HK':'Tencent'},
+  sectors: {
+    'Banking & Financials': {'HDFCBANK.NS':'HDFCBANK','ICICIBANK.NS':'ICICIBANK','KOTAKBANK.NS':'KOTAKBANK','SBIN.NS':'SBIN','BAJFINANCE.NS':'BAJFINANCE'},
+    'IT & Technology': {'TCS.NS':'TCS','INFY.NS':'INFY','WIPRO.NS':'WIPRO','HCLTECH.NS':'HCLTECH','TECHM.NS':'TECHM'},
+    'Oil Upstream': {'ONGC.NS':'ONGC','OIL.NS':'OIL INDIA','RELIANCE.NS':'RELIANCE'},
+    'Oil Downstream': {'BPCL.NS':'BPCL','IOC.NS':'IOC','HINDPETRO.NS':'HINDPETRO'},
+    'Metals & Mining': {'TATASTEEL.NS':'TATASTEEL','HINDALCO.NS':'HINDALCO','JSWSTEEL.NS':'JSWSTEEL','COALINDIA.NS':'COALINDIA'},
+    'Pharma & Healthcare': {'SUNPHARMA.NS':'SUNPHARMA','DRREDDY.NS':'DRREDDY','CIPLA.NS':'CIPLA','DIVISLAB.NS':'DIVISLAB'},
+    'Auto & EV': {'TATAMOTORS.NS':'TATAMOTORS','M%26M.NS':'M&M','MARUTI.NS':'MARUTI','BAJAJ-AUTO.NS':'BAJAJ-AUTO'},
+    'FMCG & Consumer': {'HINDUNILVR.NS':'HINDUNILVR','ITC.NS':'ITC','NESTLEIND.NS':'NESTLEIND','BRITANNIA.NS':'BRITANNIA'}
+  }
+};
 
-function fmt(n) {
-  if (n == null) return '--';
-  return Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+// Collect ALL symbols into one list
+function allSymbols() {
+  const s = new Set();
+  for (const grp of ['americas','europe','asia','energy','metals','fx','vix','broad','china_japan']) {
+    Object.keys(SYMBOLS[grp]).forEach(k => s.add(k));
+  }
+  for (const sec of Object.values(SYMBOLS.sectors)) {
+    Object.keys(sec).forEach(k => s.add(k));
+  }
+  return [...s];
 }
-function chgHtml(pct) {
+
+// ── Yahoo Finance via CORS proxy ──
+const PROXIES = [
+  syms => `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${syms}`,
+  syms => `https://corsproxy.io/?url=${encodeURIComponent('https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + syms)}`,
+  syms => `https://api.allorigins.win/raw?url=${encodeURIComponent('https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + syms)}`
+];
+
+let DATA = {}; // symbol -> {price, changePct}
+
+async function fetchBatch(symbols) {
+  const joined = symbols.join(',');
+  for (const mkUrl of PROXIES) {
+    try {
+      const url = mkUrl(joined);
+      const r = await fetch(url, {signal: AbortSignal.timeout(12000)});
+      if (!r.ok) continue;
+      const j = await r.json();
+      const results = j?.quoteResponse?.result || j?.finance?.result?.[0]?.quotes || [];
+      if (results.length === 0) continue;
+      for (const q of results) {
+        DATA[q.symbol] = {
+          price: q.regularMarketPrice ?? null,
+          changePct: q.regularMarketChangePercent ?? null
+        };
+      }
+      return true;
+    } catch(e) { continue; }
+  }
+  return false;
+}
+
+// ── Helpers ──
+function fmt(n) { return n == null ? '--' : Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function chg(pct) {
   if (pct == null) return '<span style="color:var(--muted)">--</span>';
   const c = pct >= 0 ? 'var(--green)' : 'var(--red)';
-  const arrow = pct >= 0 ? '&#9650;' : '&#9660;';
-  return `<span style="color:${c};font-weight:600">${arrow} ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</span>`;
+  const a = pct >= 0 ? '\u25B2' : '\u25BC';
+  return `<span style="color:${c};font-weight:600">${a} ${pct>=0?'+':''}${pct.toFixed(2)}%</span>`;
 }
-function tableRow(name, price, pct) {
-  return `<tr><td style="font-weight:500">${name}</td><td>${fmt(price)}</td><td>${chgHtml(pct)}</td></tr>`;
+function row(name, sym) {
+  const d = DATA[sym] || {};
+  return `<tr><td style="font-weight:500">${name}</td><td>${fmt(d.price)}</td><td>${chg(d.changePct)}</td></tr>`;
 }
 
 function setStatus(ok) {
-  const dot = document.getElementById('status-dot');
-  const txt = document.getElementById('status-text');
-  if (ok) { dot.className = 'live'; txt.textContent = 'Live'; }
-  else { dot.className = 'error'; txt.textContent = 'Error'; }
+  document.getElementById('status-dot').className = ok ? 'live' : 'err';
+  document.getElementById('status-text').textContent = ok ? 'Live' : 'Error';
 }
 
-function updateTopbar(data) {
-  const tickers = document.getElementById('topbar-tickers');
+// ── Render functions ──
+function renderTopbar() {
   const items = [];
-  // Broad market
-  (data.broad || []).forEach(b => {
-    const c = (b.changePct||0) >= 0 ? 'var(--green)' : 'var(--red)';
-    items.push(`<span><strong>${b.name}</strong>: ${fmt(b.price)} <span style="color:${c}">${(b.changePct||0) >= 0?'+':''}${(b.changePct||0).toFixed(2)}%</span></span>`);
-  });
-  // VIX
-  (data.vix || []).forEach(v => {
-    const c = v.name === 'India VIX' ? ((v.price||0) > 20 ? 'var(--red)' : 'var(--green)') : 'var(--muted)';
-    items.push(`<span>${v.name}: <strong style="color:${c}">${fmt(v.price)}</strong></span>`);
-  });
-  tickers.innerHTML = items.join('<span style="color:var(--border)">&middot;</span>');
+  for (const [sym, name] of Object.entries(SYMBOLS.broad)) {
+    const d = DATA[sym] || {};
+    const c = (d.changePct||0) >= 0 ? 'var(--green)' : 'var(--red)';
+    items.push(`<span><strong>${name}</strong>: ${fmt(d.price)} <span style="color:${c}">${(d.changePct||0)>=0?'+':''}${(d.changePct||0).toFixed(2)}%</span></span>`);
+  }
+  for (const [sym, name] of Object.entries(SYMBOLS.vix)) {
+    const d = DATA[sym] || {};
+    const c = name==='India VIX' ? ((d.price||0)>20?'var(--red)':'var(--green)') : 'var(--muted)';
+    items.push(`<span>${name}: <strong style="color:${c}">${fmt(d.price)}</strong></span>`);
+  }
+  document.getElementById('topbar').innerHTML = items.join(' <span style="color:var(--border)">&middot;</span> ');
 }
 
-function updateSummary(data) {
-  const nifty = (data.broad||[]).find(b => b.name === 'NIFTY 50');
-  const bnifty = (data.broad||[]).find(b => b.name === 'BANKNIFTY');
-  const ivix = (data.vix||[]).find(v => v.name === 'India VIX');
+function renderSummary() {
+  const n = DATA['^NSEI'] || {};
+  const b = DATA['^NSEBANK'] || {};
+  const v = DATA['^INDIAVIX'] || {};
+  document.getElementById('s-nifty').textContent = fmt(n.price);
+  document.getElementById('s-nifty-chg').innerHTML = chg(n.changePct);
+  document.getElementById('s-bnifty').textContent = fmt(b.price);
+  document.getElementById('s-bnifty-chg').innerHTML = chg(b.changePct);
 
-  if (nifty) {
-    document.getElementById('s-nifty').textContent = fmt(nifty.price);
-    document.getElementById('s-nifty-chg').innerHTML = chgHtml(nifty.changePct);
-  }
-  if (bnifty) {
-    document.getElementById('s-bnifty').textContent = fmt(bnifty.price);
-    document.getElementById('s-bnifty-chg').innerHTML = chgHtml(bnifty.changePct);
-  }
-  if (ivix) {
-    const v = ivix.price || 0;
-    const vc = v > 25 ? 'var(--red)' : (v > 20 ? '#b45309' : (v > 15 ? '#b45309' : 'var(--green)'));
-    const label = v > 25 ? 'EXTREME FEAR' : (v > 20 ? 'HIGH FEAR' : (v > 15 ? 'ELEVATED' : 'CALM'));
-    document.getElementById('s-vix').innerHTML = `<span style="color:${vc}">${v.toFixed(2)}</span>`;
-    document.getElementById('s-vix-label').textContent = label;
-  }
+  const vp = v.price || 0;
+  const vc = vp>25?'var(--red)':vp>20?'#b45309':vp>15?'#b45309':'var(--green)';
+  const vl = vp>25?'EXTREME FEAR':vp>20?'HIGH FEAR':vp>15?'ELEVATED':'CALM';
+  document.getElementById('s-vix').innerHTML = `<span style="color:${vc}">${vp.toFixed(2)}</span>`;
+  document.getElementById('s-vix-label').textContent = vl;
 
-  // Mood from sector averages
-  const sectors = data.sectors || [];
-  if (sectors.length) {
-    const avg = sectors.reduce((s,x) => s + (x.avgChange||0), 0) / sectors.length;
-    let mood, mc;
-    if (avg > 1) { mood = 'BULLISH'; mc = 'var(--green)'; }
-    else if (avg > 0) { mood = 'MILDLY BULLISH'; mc = 'var(--green)'; }
-    else if (avg < -1) { mood = 'BEARISH'; mc = 'var(--red)'; }
-    else if (avg < 0) { mood = 'MILDLY BEARISH'; mc = 'var(--red)'; }
-    else { mood = 'NEUTRAL'; mc = '#b45309'; }
-    const bull = sectors.filter(s => (s.avgChange||0) > 0.2).length;
-    const bear = sectors.filter(s => (s.avgChange||0) < -0.2).length;
-    document.getElementById('s-mood').innerHTML = `<span style="color:${mc}">${mood}</span>`;
-    document.getElementById('s-mood-sub').textContent = `${bull} bullish / ${bear} bearish sectors`;
+  // Mood from sectors
+  const sectorAvgs = [];
+  for (const stocks of Object.values(SYMBOLS.sectors)) {
+    let sum=0, cnt=0;
+    for (const sym of Object.keys(stocks)) {
+      const d = DATA[sym];
+      if (d && d.changePct != null) { sum += d.changePct; cnt++; }
+    }
+    if (cnt) sectorAvgs.push(sum/cnt);
   }
+  const avg = sectorAvgs.length ? sectorAvgs.reduce((a,b)=>a+b,0)/sectorAvgs.length : 0;
+  let mood, mc;
+  if (avg>1){mood='BULLISH';mc='var(--green)'}
+  else if(avg>0){mood='MILDLY BULLISH';mc='var(--green)'}
+  else if(avg<-1){mood='BEARISH';mc='var(--red)'}
+  else if(avg<0){mood='MILDLY BEARISH';mc='var(--red)'}
+  else{mood='NEUTRAL';mc='#b45309'}
+  const bull = sectorAvgs.filter(x=>x>0.2).length;
+  const bear = sectorAvgs.filter(x=>x<-0.2).length;
+  document.getElementById('s-mood').innerHTML = `<span style="color:${mc}">${mood}</span>`;
+  document.getElementById('s-mood-sub').textContent = `${bull} bullish / ${bear} bearish sectors`;
 }
 
-function fillTable(id, items) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = (items||[]).map(i => tableRow(i.name, i.price, i.changePct)).join('');
+function renderTables() {
+  const fill = (id, mapping) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = Object.entries(mapping).map(([sym,name]) => row(name,sym)).join('');
+  };
+  fill('tbl-am', SYMBOLS.americas);
+  fill('tbl-eu', SYMBOLS.europe);
+  fill('tbl-as', SYMBOLS.asia);
+  fill('tbl-en', SYMBOLS.energy);
+  fill('tbl-mt', SYMBOLS.metals);
+  fill('tbl-fx', SYMBOLS.fx);
+  fill('tbl-cj', SYMBOLS.china_japan);
 }
 
-function updateGlobal(data) {
-  const g = data.global || [];
-  const americas = ['S&P 500','NASDAQ','Dow Jones','Russell 2000'];
-  const europe = ['FTSE 100','DAX','CAC 40'];
-  const asia = ['Nikkei 225','TOPIX','Hang Seng','Shanghai','Shenzhen','CSI 300','KOSPI'];
-
-  fillTable('tbl-americas', g.filter(x => americas.includes(x.name)));
-  fillTable('tbl-europe', g.filter(x => europe.includes(x.name)));
-  fillTable('tbl-asia', g.filter(x => asia.includes(x.name)));
-
-  const c = data.commodities || [];
-  const energy = ['Crude Oil WTI','Brent Crude','Natural Gas'];
-  const metals = ['Gold','Silver','Copper'];
-  const fx = ['USD/INR','US 10Y Yield','Dollar Index'];
-  fillTable('tbl-energy', c.filter(x => energy.includes(x.name)));
-  fillTable('tbl-metals', c.filter(x => metals.includes(x.name)));
-  fillTable('tbl-fx', c.filter(x => fx.includes(x.name)));
-
-  fillTable('tbl-cj', data.china_japan || []);
-}
-
-function updateSectors(data) {
+function renderSectors() {
   const grid = document.getElementById('sector-grid');
-  if (!grid) return;
   grid.innerHTML = '';
-  (data.sectors || []).forEach(sec => {
-    const avg = sec.avgChange || 0;
-    const cls = avg > 0.1 ? 'up' : (avg < -0.1 ? 'down' : 'flat');
-    const arrow = avg >= 0 ? '&#9650;' : '&#9660;';
-    let rows = '';
-    (sec.stocks || []).forEach(st => {
-      const sc = (st.changePct||0) >= 0 ? 'up-text' : 'down-text';
-      const a = (st.changePct||0) >= 0 ? '&#9650;' : '&#9660;';
-      rows += `<div class="stock-row"><span class="stock-name">${st.name}</span><span class="stock-price">${fmt(st.price)}</span><span class="stock-chg ${sc}">${a} ${(st.changePct||0) >= 0?'+':''}${(st.changePct||0).toFixed(2)}%</span></div>`;
-    });
-    grid.innerHTML += `<div class="card sector-card"><div class="sector-header"><span class="sector-name">${sec.name}</span><span class="sector-badge ${cls}">${arrow} ${avg >= 0?'+':''}${avg.toFixed(2)}%</span></div>${rows}</div>`;
-  });
-}
-
-function updateMapPins(data) {
-  const pins = document.getElementById('map-pins');
-  if (!pins) return;
-  // Pin positions (% from top-left of map)
-  const locs = [
-    {name:'S&P 500',x:22,y:30},{name:'FTSE 100',x:46,y:22},{name:'DAX',x:50,y:22},
-    {name:'Nikkei 225',x:82,y:30},{name:'Hang Seng',x:75,y:42},{name:'Shanghai',x:73,y:34},
-    {name:'NIFTY 50',x:66,y:42},{name:'KOSPI',x:79,y:30}
-  ];
-  const all = [...(data.global||[]), ...(data.broad||[])];
-  pins.innerHTML = '';
-  locs.forEach(loc => {
-    const d = all.find(x => x.name === loc.name);
-    const c = d && d.changePct != null ? (d.changePct >= 0 ? 'var(--green)' : 'var(--red)') : '#ccc';
-    pins.innerHTML += `<div class="map-pin" style="left:${loc.x}%;top:${loc.y}%;background:${c}" title="${loc.name}: ${d ? (d.changePct>=0?'+':'') + d.changePct.toFixed(2) + '%' : 'N/A'}"></div>`;
-  });
-}
-
-async function refreshData() {
-  try {
-    const r = await fetch(API + '?t=' + Date.now());
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    updateTopbar(data);
-    updateSummary(data);
-    updateGlobal(data);
-    updateSectors(data);
-    updateMapPins(data);
-    setStatus(true);
-    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
-  } catch(e) {
-    console.error('Fetch error:', e);
-    setStatus(false);
+  for (const [secName, stocks] of Object.entries(SYMBOLS.sectors)) {
+    let sum=0, cnt=0, rows='';
+    for (const [sym, name] of Object.entries(stocks)) {
+      const d = DATA[sym] || {};
+      const sc = (d.changePct||0)>=0 ? 'up' : 'dn';
+      const ar = (d.changePct||0)>=0 ? '\u25B2' : '\u25BC';
+      rows += `<div class="stock-row"><span class="stock-name">${name}</span><span class="stock-price">${fmt(d.price)}</span><span class="stock-chg ${sc}">${ar} ${(d.changePct||0)>=0?'+':''}${(d.changePct||0).toFixed(2)}%</span></div>`;
+      if (d.changePct != null) { sum += d.changePct; cnt++; }
+    }
+    const avg = cnt ? sum/cnt : 0;
+    const bc = avg>0.1?'badge-up':avg<-0.1?'badge-down':'badge-flat';
+    const ar = avg>=0?'\u25B2':'\u25BC';
+    grid.innerHTML += `<div class="card"><div class="sector-header"><span class="sector-name">${secName}</span><span class="sector-badge ${bc}">${ar} ${avg>=0?'+':''}${avg.toFixed(2)}%</span></div>${rows}</div>`;
   }
 }
 
-// Initial load + auto-refresh every 60s
-refreshData();
-refreshTimer = setInterval(refreshData, 60000);
+function renderMapPins() {
+  const pins = document.getElementById('map-pins');
+  const locs = [
+    {sym:'^GSPC',x:22,y:30},{sym:'^FTSE',x:46,y:22},{sym:'^GDAXI',x:50,y:22},
+    {sym:'^N225',x:82,y:30},{sym:'^HSI',x:75,y:42},{sym:'000001.SS',x:73,y:34},
+    {sym:'^NSEI',x:66,y:42},{sym:'^KS11',x:79,y:30}
+  ];
+  pins.innerHTML = locs.map(l => {
+    const d = DATA[l.sym];
+    const c = d && d.changePct!=null ? (d.changePct>=0?'var(--green)':'var(--red)') : '#ccc';
+    const name = Object.values(SYMBOLS.americas)[0] || l.sym;
+    return `<div class="map-pin" style="left:${l.x}%;top:${l.y}%;background:${c}" title="${l.sym}"></div>`;
+  }).join('');
+}
+
+function renderAll() {
+  renderTopbar();
+  renderSummary();
+  renderTables();
+  renderSectors();
+  renderMapPins();
+  document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+}
+
+// ── Main load ──
+async function loadAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+
+  const syms = allSymbols();
+  // Batch in groups of 20
+  let ok = false;
+  for (let i = 0; i < syms.length; i += 20) {
+    const batch = syms.slice(i, i + 20);
+    const success = await fetchBatch(batch);
+    if (success) ok = true;
+  }
+
+  if (ok) {
+    renderAll();
+    setStatus(true);
+  } else {
+    setStatus(false);
+    document.getElementById('topbar').innerHTML = 'Failed to load data. Yahoo Finance may be blocking requests. Try refreshing.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '\u21BB Refresh';
+}
+
+// Boot
+loadAll();
+setInterval(loadAll, 60000);
 </script>
 </body>
 </html>
