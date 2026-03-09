@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.git/
+.DS_Store
+data/
+reports/
+public/
+profreehost/
+.vercel
+.env
+*.log
