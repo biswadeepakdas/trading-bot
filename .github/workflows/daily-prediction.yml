@@ -24,8 +24,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install numpy>=1.26.0,\<2.0.0 pandas tensorflow xgboost scikit-learn \
-            scipy matplotlib ta pandas-ta vmdpy yfinance
+          pip install "numpy>=1.26.0,<2.0.0" pandas tensorflow xgboost scikit-learn \
+            scipy matplotlib ta pandas-ta vmdpy yfinance \
+            git+https://github.com/rongardF/tvdatafeed.git
 
       - name: Run predictions
         run: python run_prediction.py
