@@ -1,1400 +1,378 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Market Prediction Dashboard &mdash; Monday, March 09, 2026</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Market — Live Dashboard</title>
 <style>
-/* ============================================================
-   DESIGN TOKENS
-   ============================================================ */
+*{margin:0;padding:0;box-sizing:border-box}
 :root{
-  /* Surfaces */
-  --bg-base:#020617;
-  --bg-card:#0a101e;
-  --bg-elevated:#101827;
-  --bg-hover:#141c2e;
-  /* Borders */
-  --border:#172033;
-  --border-hover:rgba(99,136,199,.18);
-  --border-accent:rgba(59,130,246,.22);
-  /* Text */
-  --text-primary:#f1f5f9;
-  --text-secondary:#94a3b8;
-  --text-muted:#4b5c78;
-  /* Accent */
-  --accent:#3b82f6;
-  --accent-glow:rgba(59,130,246,.08);
-  /* Semantic */
-  --green:#22c55e;
-  --red:#ef4444;
-  --amber:#f59e0b;
-  /* Spacing */
-  --gap:20px;
-  --radius:14px;
-  --radius-sm:10px;
-  --radius-xs:7px;
+  --bg:#f8fafb;--card:#fff;--border:#e5e7eb;--text:#1a1a2e;--muted:#6b7280;
+  --accent:#0e7c6b;--accent-light:#e6f5f1;--red:#dc2646;--red-light:#fef2f4;
+  --green:#0e7c6b;--green-light:#e6f5f1;--shadow:0 1px 3px rgba(0,0,0,.06);
+  --radius:10px;
 }
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
 
-/* ============================================================
-   RESET & BASE
-   ============================================================ */
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{font-size:16px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;scroll-behavior:smooth}
-body{
-  font-family:'Inter',system-ui,-apple-system,sans-serif;
-  background:var(--bg-base);
-  color:var(--text-primary);
-  min-height:100vh;
-  line-height:1.6;
-  font-variant-numeric:tabular-nums;
-}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+/* Top bar */
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:8px 24px;display:flex;justify-content:space-between;align-items:center;font-size:.82rem;position:sticky;top:0;z-index:100}
+.topbar-tickers{display:flex;gap:20px;flex-wrap:wrap}
+.topbar-tickers span{white-space:nowrap}
+.topbar-right{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.75rem}
+#status-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block}
+#status-dot.live{background:var(--green);box-shadow:0 0 6px var(--green)}
+#status-dot.error{background:var(--red)}
 
-/* ============================================================
-   LAYOUT
-   ============================================================ */
-.app{max-width:1440px;margin:0 auto;padding:32px 40px 56px}
-@media(max-width:768px){.app{padding:20px 16px 40px}}
+/* Layout */
+.container{max-width:1320px;margin:0 auto;padding:20px 24px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.header h1{font-size:1.6rem;font-weight:700;letter-spacing:-.02em}
+.header-tags{display:flex;gap:8px;align-items:center}
+.tag{font-size:.7rem;padding:3px 10px;border-radius:20px;font-weight:600;letter-spacing:.02em}
+.tag-live{background:var(--green-light);color:var(--green)}
+.tag-live .dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ============================================================
-   HEADER
-   ============================================================ */
-.header{display:flex;align-items:center;justify-content:space-between;padding:28px 32px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:var(--gap);flex-wrap:wrap;gap:16px;position:relative;overflow:hidden}
-.header::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(59,130,246,.15),transparent)}
-.header-left{display:flex;align-items:center;gap:16px}
-.logo-mark{width:44px;height:44px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
-.header h1{font-size:1.35rem;font-weight:700;color:var(--text-primary);letter-spacing:-.03em;line-height:1.2}
-.header-sub{font-size:.8rem;color:var(--text-muted);font-weight:400;margin-top:2px}
-.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.tag{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--radius-xs);font-size:.72rem;font-weight:500;letter-spacing:.01em}
-.tag-ml{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);color:var(--accent)}
-.tag-live{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);color:var(--green)}
-.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2.5s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+/* Cards */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr}}
 
-/* ============================================================
-   TOOLBAR
-   ============================================================ */
-.toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:28px;flex-wrap:wrap;gap:10px}
-.toolbar-left{display:flex;align-items:center;gap:12px;font-size:.78rem;color:var(--text-secondary)}
-.toolbar-left .gen-time{color:var(--text-primary);font-weight:500}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--radius-xs);font-size:.78rem;font-weight:600;border:none;cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);font-family:inherit}
-.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{filter:brightness(1.12);box-shadow:0 4px 20px rgba(59,130,246,.2)}
-.btn-primary:active{transform:scale(.98)}
-.btn-primary.loading{opacity:.6;pointer-events:none}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-secondary)}
-.btn-ghost:hover{border-color:rgba(59,130,246,.2);color:var(--text-primary);background:var(--accent-glow)}
-.auto-label{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text-muted);cursor:pointer}
-.auto-label input{accent-color:var(--accent);cursor:pointer}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.card-title{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;font-weight:600}
 
-/* ============================================================
-   MOOD SECTION
-   ============================================================ */
-.mood-section{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap);margin-bottom:28px}
-@media(max-width:900px){.mood-section{grid-template-columns:1fr}}
-.mood-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;transition:border-color .25s}
-.mood-card:hover{border-color:var(--border-hover)}
-.mood-card.main{border-color:#4ade8018;position:relative;overflow:hidden}
-.mood-card.main::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(74,222,128,.04),transparent 70%);pointer-events:none}
-.mood-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.14em;font-weight:600;margin-bottom:8px}
-.mood-value{font-size:2.2rem;font-weight:800;color:#4ade80;letter-spacing:-.03em;line-height:1.1}
-.mood-meta{font-size:.8rem;color:var(--text-secondary);margin-top:8px}
-.mood-breakdown{display:flex;justify-content:center;gap:32px;margin-top:14px}
-.mood-stat{text-align:center}
-.mood-stat-val{font-size:1.6rem;font-weight:700;line-height:1.2}
-.mood-stat-label{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+/* Summary cards */
+.summary-val{font-size:1.8rem;font-weight:700;letter-spacing:-.02em}
+.summary-sub{font-size:.78rem;color:var(--muted);margin-top:2px}
 
-/* ============================================================
-   VIX STRIP
-   ============================================================ */
-.vix-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap);margin-bottom:28px}
-@media(max-width:768px){.vix-strip{grid-template-columns:1fr}}
-.vix-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;display:flex;align-items:center;gap:16px;transition:border-color .25s}
-.vix-card:hover{border-color:var(--border-hover)}
-.vix-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.vix-info .vix-label{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
-.vix-info .vix-val{font-size:1.15rem;font-weight:700;margin-top:2px}
+/* Sector cards */
+.sector-card{cursor:default}
+.sector-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sector-name{font-size:.95rem;font-weight:700}
+.sector-badge{font-size:.72rem;padding:2px 8px;border-radius:12px;font-weight:600}
+.sector-badge.up{background:var(--green-light);color:var(--green)}
+.sector-badge.down{background:var(--red-light);color:var(--red)}
+.sector-badge.flat{background:#f3f4f6;color:var(--muted)}
 
-/* ============================================================
-   BROAD MARKET
-   ============================================================ */
-.broad-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--gap);margin-bottom:32px}
-.broad-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;transition:border-color .25s,box-shadow .25s}
-.broad-card:hover{border-color:var(--border-accent);box-shadow:0 0 32px rgba(59,130,246,.04)}
-.broad-label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.12em;font-weight:600}
-.broad-price{font-size:1.75rem;font-weight:700;margin:6px 0;color:var(--text-primary);line-height:1.2}
-.broad-chg{display:inline-flex;align-items:center;gap:4px;font-size:.88rem;font-weight:600}
+/* Stock rows inside sector */
+.stock-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid #f3f4f6;font-size:.82rem}
+.stock-row:first-child{border-top:none}
+.stock-name{font-weight:500;flex:1}
+.stock-price{color:var(--muted);margin-right:12px;font-variant-numeric:tabular-nums}
+.stock-chg{font-weight:600;min-width:70px;text-align:right;font-variant-numeric:tabular-nums}
+.up-text{color:var(--green)}.down-text{color:var(--red)}
 
-/* ============================================================
-   SECTION HEADERS
-   ============================================================ */
-.sec-head{display:flex;align-items:center;justify-content:space-between;margin:36px 0 18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
-.sec-head h2{font-size:1rem;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
-.sec-head h2 svg{color:var(--accent);opacity:.7}
+/* Market tables */
+.market-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.market-table th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:2px solid var(--border);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.market-table td{padding:8px;border-bottom:1px solid #f3f4f6;font-variant-numeric:tabular-nums}
+.market-table tr:hover{background:#fafbfc}
 
-/* ============================================================
-   MARKET CARDS GRID
-   ============================================================ */
-.mkt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
-.mkt-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center;transition:border-color .25s,box-shadow .25s;cursor:default}
-.mkt-card:hover{border-color:var(--border-hover);box-shadow:0 0 24px rgba(59,130,246,.03)}
-.mkt-name{font-size:.67rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mkt-sym{font-size:.52rem;color:var(--text-muted);margin-left:3px;text-transform:none;letter-spacing:0;font-weight:400;opacity:.6}
-.mkt-price{font-size:.95rem;font-weight:600;color:var(--text-primary);margin:3px 0}
-.mkt-change{display:inline-flex;align-items:center;gap:3px;font-size:.76rem;font-weight:600}
+/* Section title */
+.section{margin-top:32px}
+.section-title{font-size:1.1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-title .icon{width:20px;height:20px;fill:var(--accent)}
 
-.sub-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin:18px 0 10px;display:flex;align-items:center;gap:8px}
-.sub-label::after{content:'';flex:1;height:1px;background:var(--border)}
+/* World map SVG */
+.map-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.map-wrap svg{width:100%;height:auto;opacity:.15}
+.map-pins{position:absolute;top:0;left:0;width:100%;height:100%}
+.map-pin{position:absolute;width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transform:translate(-50%,-50%)}
 
-/* ============================================================
-   CHINA/JAPAN
-   ============================================================ */
-.intl-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:32px}
-.intl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+/* Refresh button */
+.btn{padding:6px 16px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;color:var(--text)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:#0a6b5c}
 
-/* ============================================================
-   HEATMAP
-   ============================================================ */
-.hm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:36px}
-.hm-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;transition:border-color .25s,box-shadow .25s;cursor:default;position:relative;overflow:hidden}
-.hm-card:hover{border-color:var(--sig,var(--border-hover));box-shadow:0 0 24px rgba(59,130,246,.03)}
-.hm-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--sig,var(--border));border-radius:2px 0 0 2px}
-.hm-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.hm-sector{font-size:.82rem;font-weight:600}
-.hm-signal{display:flex;align-items:center}
-.hm-action{font-size:1.2rem;font-weight:800;margin:4px 0;letter-spacing:-.02em}
-.hm-metrics{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-secondary);margin:8px 0 12px}
-.hm-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.hm-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.hm-score{font-size:.65rem;color:var(--text-muted);margin-top:8px;text-align:right}
+/* Loading shimmer */
+.loading{position:relative;overflow:hidden}
+.loading::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{100%{left:100%}}
 
-/* ============================================================
-   DEEP DIVE CARDS
-   ============================================================ */
-.deep-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(560px,1fr));gap:var(--gap);margin-bottom:36px}
-@media(max-width:600px){.deep-grid{grid-template-columns:1fr}}
-.deep-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:border-color .25s}
-.deep-card:hover{border-color:var(--border-hover)}
-.deep-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px}
-.deep-title-wrap{display:flex;align-items:flex-start;gap:12px}
-.deep-dot{width:10px;height:10px;border-radius:3px;margin-top:6px;flex-shrink:0}
-.deep-title{font-size:1.05rem;font-weight:600;color:var(--text-primary);letter-spacing:-.01em}
-.deep-desc{font-size:.72rem;color:var(--text-muted);margin-top:3px;max-width:320px;line-height:1.5}
-.deep-badge{padding:10px 16px;border-radius:var(--radius-sm);text-align:center;background:var(--bg-elevated);border:1.5px solid var(--sig);min-width:110px}
-.badge-action{display:block;font-size:.9rem;font-weight:700;color:var(--sig)}
-.badge-label{display:block;font-size:.6rem;color:var(--text-muted);margin-top:2px}
+/* Footer */
+.footer{text-align:center;padding:32px 0;color:var(--muted);font-size:.75rem;border-top:1px solid var(--border);margin-top:40px}
+</style>
+</head>
+<body>
 
-/* KPI Row */
-.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}
-@media(max-width:600px){.kpi-row{grid-template-columns:repeat(3,1fr)}}
-.kpi{background:var(--bg-base);border:1px solid var(--border);border-radius:var(--radius-xs);padding:10px;text-align:center;transition:border-color .25s}
-.kpi:hover{border-color:var(--border-hover)}
-.kpi-main{border-color:rgba(59,130,246,.15)}
-.kpi-label{display:block;font-size:.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
-.kpi-val{display:block;font-size:.95rem;font-weight:700;margin-top:3px}
-
-/* Tables */
-.deep-tables{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:600px){.deep-tables{grid-template-columns:1fr}}
-.dtable{overflow-x:auto}
-.dtable-title{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.dtable-title svg{color:var(--accent);opacity:.6}
-.dtable table{width:100%;border-collapse:collapse;font-size:.76rem}
-.dtable th{text-align:left;font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;padding:7px 8px;border-bottom:1px solid var(--border)}
-.dtable td{padding:7px 8px;border-bottom:1px solid rgba(23,32,51,.6);color:var(--text-secondary)}
-.td-name{font-weight:500;color:var(--text-primary)}
-.td-muted{color:var(--text-muted)}
-.dtable tbody tr{transition:background .2s}
-.dtable tbody tr:hover{background:var(--bg-hover)}
-
-/* ============================================================
-   DISCLAIMER & FOOTER
-   ============================================================ */
-.disclaimer{background:var(--bg-card);border:1px solid rgba(146,64,14,.12);border-radius:var(--radius-sm);padding:20px 24px;margin-top:36px;display:flex;align-items:flex-start;gap:12px}
-.disclaimer svg{flex-shrink:0;color:var(--amber);margin-top:2px}
-.disclaimer p{font-size:.75rem;color:var(--text-secondary);line-height:1.7}
-.disclaimer strong{color:var(--amber)}
-.footer{text-align:center;color:var(--text-muted);font-size:.65rem;margin-top:20px;padding-bottom:24px;letter-spacing:.02em;opacity:.6}
-
-/* ============================================================
-   SCROLLBAR
-   ============================================================ */
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:#2a3a52}
-
-/* ============================================================
-   ANIMATIONS
-   ============================================================ */
-.reveal{opacity:0;transform:translateY(12px);animation:reveal .5s cubic-bezier(.4,0,.2,1) forwards}
-@keyframes reveal{to{opacity:1;transform:translateY(0)}}
-.reveal-d1{animation-delay:.05s} .reveal-d2{animation-delay:.1s} .reveal-d3{animation-delay:.15s} .reveal-d4{animation-delay:.2s} .reveal-d5{animation-delay:.25s} .reveal-d6{animation-delay:.3s}
-</style></head><body>
-
-<div class="app">
-
-<!-- ===== HEADER ===== -->
-<div class="header reveal">
-    <div class="header-left">
-        <div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
-        <div>
-            <h1>Market Prediction</h1>
-            <span class="header-sub">Monday, March 09, 2026 &middot; 06:00 PM</span>
-        </div>
-    </div>
-    <div class="header-right">
-        <span class="tag tag-ml"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> LSTM + XGBoost</span>
-        <span class="tag tag-live"><span class="live-dot"></span> Live</span>
-    </div>
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-tickers" id="topbar-tickers">
+    <span>Loading market data...</span>
+  </div>
+  <div class="topbar-right">
+    <span id="status-dot"></span>
+    <span id="status-text">Connecting...</span>
+    <span style="color:var(--border)">&middot;</span>
+    <span id="last-update">--</span>
+  </div>
 </div>
 
-<!-- ===== TOOLBAR ===== -->
-<div class="toolbar reveal reveal-d1">
-    <div class="toolbar-left">
-        <span id="connStatus" style="font-size:.72rem">Connecting...</span>
-        <span style="color:var(--border)">&middot;</span>
-        Updated <span class="gen-time" id="lastUpdate">06:00 PM</span>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:14px">
+      <h1>The Market</h1>
+      <span class="tag tag-live"><span class="dot"></span> Live</span>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <label class="auto-label"><input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()"> Auto</label>
-        <button class="btn btn-ghost" onclick="fetchPrices()" title="Quick price refresh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Prices</button>
-        <button class="btn btn-primary" id="refreshAll" onclick="refreshAll()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Refresh</button>
+    <div class="header-tags">
+      <button class="btn" onclick="refreshData()">&#8635; Refresh</button>
     </div>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="grid g4" id="summary-cards">
+    <div class="card"><div class="card-title">NIFTY 50</div><div class="summary-val" id="s-nifty">--</div><div class="summary-sub" id="s-nifty-chg">--</div></div>
+    <div class="card"><div class="card-title">BANKNIFTY</div><div class="summary-val" id="s-bnifty">--</div><div class="summary-sub" id="s-bnifty-chg">--</div></div>
+    <div class="card"><div class="card-title">India VIX</div><div class="summary-val" id="s-vix">--</div><div class="summary-sub" id="s-vix-label">--</div></div>
+    <div class="card"><div class="card-title">Market Mood</div><div class="summary-val" id="s-mood">--</div><div class="summary-sub" id="s-mood-sub">--</div></div>
+  </div>
+
+  <!-- WORLD MAP -->
+  <div class="section" style="margin-top:24px">
+    <div class="map-wrap">
+      <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+        <!-- Simplified world map paths -->
+        <path d="M150,120 Q200,100 250,110 L280,130 Q260,160 230,170 L190,160 Q160,145 150,120Z" fill="var(--accent)"/><!-- NA -->
+        <path d="M220,180 Q250,200 260,240 L240,280 Q220,260 200,240 L210,200Z" fill="var(--accent)"/><!-- SA -->
+        <path d="M430,100 Q480,90 530,100 L540,140 Q510,160 470,155 L440,140Z" fill="var(--accent)"/><!-- Europe -->
+        <path d="M470,160 Q510,170 540,200 L530,250 Q500,240 470,220 L460,190Z" fill="var(--accent)"/><!-- Africa -->
+        <path d="M600,100 Q660,80 720,90 L750,120 Q740,150 700,160 L640,150 Q610,130 600,100Z" fill="var(--accent)"/><!-- Asia -->
+        <path d="M650,160 Q680,180 700,200 L690,230 Q660,220 640,200Z" fill="var(--accent)"/><!-- India -->
+        <path d="M780,220 Q820,240 840,270 L820,300 Q790,280 780,250Z" fill="var(--accent)"/><!-- Australia -->
+      </svg>
+      <div class="map-pins" id="map-pins"></div>
+    </div>
+  </div>
+
+  <!-- GLOBAL MARKETS -->
+  <div class="section">
+    <div class="section-title">Global Markets</div>
+    <div class="grid g3">
+      <div class="card">
+        <div class="card-title">Americas</div>
+        <table class="market-table"><thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-americas"></tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-title">Europe</div>
+        <table class="market-table"><thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-europe"></tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-title">Asia Pacific</div>
+        <table class="market-table"><thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-asia"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMODITIES & FX -->
+  <div class="section">
+    <div class="section-title">Commodities & FX</div>
+    <div class="grid g3">
+      <div class="card">
+        <div class="card-title">Energy</div>
+        <table class="market-table"><thead><tr><th>Name</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-energy"></tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-title">Metals</div>
+        <table class="market-table"><thead><tr><th>Name</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-metals"></tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-title">Currency & Bonds</div>
+        <table class="market-table"><thead><tr><th>Name</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-fx"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHINA & JAPAN -->
+  <div class="section">
+    <div class="section-title">China & Japan Stocks</div>
+    <div class="card">
+      <table class="market-table"><thead><tr><th>Company</th><th>Price</th><th>Change</th></tr></thead><tbody id="tbl-cj"></tbody></table>
+    </div>
+  </div>
+
+  <!-- SECTORS -->
+  <div class="section">
+    <div class="section-title">Indian Sectors</div>
+    <div class="grid g2" id="sector-grid"></div>
+  </div>
+
+  <div class="footer">
+    The Market Dashboard &mdash; Data from Yahoo Finance &mdash; Auto-refreshes every 60s<br>
+    Prices may be delayed. Not financial advice.
+  </div>
 </div>
-
-<!-- ===== MARKET MOOD ===== -->
-<div class="mood-section reveal reveal-d2">
-    <div class="mood-card main">
-        <div class="mood-label">Market Outlook</div>
-        <div class="mood-value">MILDLY BULLISH</div>
-        <div class="mood-meta">Composite +0.04</div>
-    </div>
-    <div class="mood-card">
-        <div class="mood-label">Sector Breakdown</div>
-        <div class="mood-breakdown">
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--green)">3</div><div class="mood-stat-label">Bullish</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--amber)">2</div><div class="mood-stat-label">Neutral</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--red)">3</div><div class="mood-stat-label">Bearish</div></div>
-        </div>
-    </div>
-    <div class="mood-card">
-        <div class="mood-label">ML Model Performance</div>
-        <div class="mood-breakdown">
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--accent)">69%</div><div class="mood-stat-label">Avg Accuracy</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--green)">71%</div><div class="mood-stat-label">Best Model</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--text-secondary)">8</div><div class="mood-stat-label">Models</div></div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== VIX STRIP ===== -->
-<div class="vix-strip reveal reveal-d3">
-    <div class="vix-card">
-        <div class="vix-icon" style="background:#ef444410"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
-        <div class="vix-info">
-            <div class="vix-label">India VIX</div>
-            <div class="vix-val" style="color:#ef4444">23.36 <span style="font-size:.72rem;font-weight:400;color:var(--text-muted)">(+17.5%)</span></div>
-        </div>
-    </div>
-    <div class="vix-card">
-        <div class="vix-icon" style="background:#ef444410"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
-        <div class="vix-info">
-            <div class="vix-label">Fear Level</div>
-            <div class="vix-val" style="color:#ef4444">HIGH FEAR</div>
-        </div>
-    </div>
-    <div class="vix-card">
-        <div class="vix-icon" style="background:rgba(59,130,246,.08)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
-        <div class="vix-info">
-            <div class="vix-label">US VIX</div>
-            <div class="vix-val">26.61 <span style="font-size:.72rem;font-weight:400;color:var(--text-muted)">(-9.7%)</span></div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== BROAD MARKET ===== -->
-<div class="broad-row reveal reveal-d3"><div class="broad-card" data-name="NIFTY 50" data-type="broad">
-            <div class="broad-label">NIFTY 50</div>
-            <div class="broad-price" data-field="price">24,028.05</div>
-            <div class="broad-chg" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -1.73%</div>
-        </div><div class="broad-card" data-name="BANKNIFTY" data-type="broad">
-            <div class="broad-label">BANKNIFTY</div>
-            <div class="broad-price" data-field="price">56,019.80</div>
-            <div class="broad-chg" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -3.05%</div>
-        </div></div>
-
-<!-- ===== GLOBAL MARKETS ===== -->
-<div class="sec-head"><h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global Markets</h2><button class="btn btn-ghost" onclick="refreshSection('global')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button></div>
-<div id="global-section" class="reveal reveal-d4">
-    <div class="sub-label">United States</div><div class="mkt-grid"><div class="mkt-card" data-name="S&P 500" data-type="global">
-                <div class="mkt-name">S&P 500</div>
-                <div class="mkt-price" data-field="price">6,725.17</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.22%</div>
-            </div><div class="mkt-card" data-name="NASDAQ" data-type="global">
-                <div class="mkt-name">NASDAQ</div>
-                <div class="mkt-price" data-field="price">22,445.88</div>
-                <div class="mkt-change" style="color:#22c55e" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> +0.26%</div>
-            </div><div class="mkt-card" data-name="Dow Jones" data-type="global">
-                <div class="mkt-name">Dow Jones</div>
-                <div class="mkt-price" data-field="price">47,199.06</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.64%</div>
-            </div><div class="mkt-card" data-name="Russell 2000" data-type="global">
-                <div class="mkt-name">Russell 2000</div>
-                <div class="mkt-price" data-field="price">2,511.56</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.54%</div>
-            </div></div>
-    <div class="sub-label">Europe</div><div class="mkt-grid"><div class="mkt-card" data-name="FTSE 100" data-type="global">
-                <div class="mkt-name">FTSE 100</div>
-                <div class="mkt-price" data-field="price">10,249.53</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.34%</div>
-            </div><div class="mkt-card" data-name="DAX (Germany)" data-type="global">
-                <div class="mkt-name">DAX (Germany)</div>
-                <div class="mkt-price" data-field="price">23,394.37</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.83%</div>
-            </div><div class="mkt-card" data-name="CAC 40 (France)" data-type="global">
-                <div class="mkt-name">CAC 40 (France)</div>
-                <div class="mkt-price" data-field="price">7,915.37</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.98%</div>
-            </div></div>
-    <div class="sub-label">Asia Pacific</div><div class="mkt-grid"><div class="mkt-card" data-name="Nikkei 225" data-type="global">
-                <div class="mkt-name">Nikkei 225</div>
-                <div class="mkt-price" data-field="price">52,728.67</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -5.20%</div>
-            </div><div class="mkt-card" data-name="TOPIX (Japan)" data-type="global">
-                <div class="mkt-name">TOPIX (Japan)</div>
-                <div class="mkt-price" data-field="price">3,575.84</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -3.80%</div>
-            </div><div class="mkt-card" data-name="Hang Seng" data-type="global">
-                <div class="mkt-name">Hang Seng</div>
-                <div class="mkt-price" data-field="price">25,408.47</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -1.35%</div>
-            </div><div class="mkt-card" data-name="Shanghai Composite" data-type="global">
-                <div class="mkt-name">Shanghai Composite</div>
-                <div class="mkt-price" data-field="price">4,096.60</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.67%</div>
-            </div><div class="mkt-card" data-name="Shenzhen Component" data-type="global">
-                <div class="mkt-name">Shenzhen Component</div>
-                <div class="mkt-price" data-field="price">14,067.50</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.74%</div>
-            </div><div class="mkt-card" data-name="CSI 300 (China)" data-type="global">
-                <div class="mkt-name">CSI 300 (China)</div>
-                <div class="mkt-price" data-field="price">4,615.46</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.97%</div>
-            </div><div class="mkt-card" data-name="KOSPI" data-type="global">
-                <div class="mkt-name">KOSPI</div>
-                <div class="mkt-price" data-field="price">5,251.88</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -5.96%</div>
-            </div></div>
-    <div class="sub-label">Commodities &amp; Forex</div><div class="mkt-grid"><div class="mkt-card" data-name="Crude Oil (WTI)" data-type="global">
-                <div class="mkt-name">Crude Oil (WTI)</div>
-                <div class="mkt-price" data-field="price">94.81</div>
-                <div class="mkt-change" style="color:#22c55e" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> +3.89%</div>
-            </div><div class="mkt-card" data-name="Brent Crude" data-type="global">
-                <div class="mkt-name">Brent Crude</div>
-                <div class="mkt-price" data-field="price">99.65</div>
-                <div class="mkt-change" style="color:#22c55e" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> +6.77%</div>
-            </div><div class="mkt-card" data-name="Gold" data-type="global">
-                <div class="mkt-name">Gold</div>
-                <div class="mkt-price" data-field="price">5,104.91</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -1.29%</div>
-            </div><div class="mkt-card" data-name="Silver" data-type="global">
-                <div class="mkt-name">Silver</div>
-                <div class="mkt-price" data-field="price">84.66</div>
-                <div class="mkt-change" style="color:#22c55e" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> +0.22%</div>
-            </div><div class="mkt-card" data-name="Copper" data-type="global">
-                <div class="mkt-name">Copper</div>
-                <div class="mkt-price" data-field="price">5.85</div>
-                <div class="mkt-change" style="color:#22c55e" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> +0.78%</div>
-            </div><div class="mkt-card" data-name="Natural Gas" data-type="global">
-                <div class="mkt-name">Natural Gas</div>
-                <div class="mkt-price" data-field="price">3.08</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -3.36%</div>
-            </div><div class="mkt-card" data-name="USD/INR" data-type="global">
-                <div class="mkt-name">USD/INR</div>
-                <div class="mkt-price" data-field="price">92.09</div>
-                <div class="mkt-change" style="color:#22c55e" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> +0.20%</div>
-            </div><div class="mkt-card" data-name="US 10Y Yield" data-type="global">
-                <div class="mkt-name">US 10Y Yield</div>
-                <div class="mkt-price" data-field="price">4.13</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.05%</div>
-            </div><div class="mkt-card" data-name="Dollar Index" data-type="global">
-                <div class="mkt-name">Dollar Index</div>
-                <div class="mkt-price" data-field="price">99.06</div>
-                <div class="mkt-change" style="color:#22c55e" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> +0.21%</div>
-            </div></div>
-</div>
-
-<!-- ===== CHINA & JAPAN ===== -->
-<div class="sec-head"><h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Japan &amp; China</h2><button class="btn btn-ghost" onclick="refreshSection('chinajapan')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button></div>
-<div class="intl-section reveal reveal-d4">
-    <div class="sub-label">Japan (TSE)</div><div class="intl-grid"><div class="mkt-card" data-name="Toyota" data-type="china_japan">
-                <div class="mkt-name">Toyota<span class="mkt-sym">7203.T</span></div>
-                <div class="mkt-price" data-field="price">3,393.00</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -3.47%</div>
-            </div><div class="mkt-card" data-name="Sony" data-type="china_japan">
-                <div class="mkt-name">Sony<span class="mkt-sym">6758.T</span></div>
-                <div class="mkt-price" data-field="price">3,346.00</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -3.66%</div>
-            </div><div class="mkt-card" data-name="SoftBank" data-type="china_japan">
-                <div class="mkt-name">SoftBank<span class="mkt-sym">9984.T</span></div>
-                <div class="mkt-price" data-field="price">3,541.00</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -9.81%</div>
-            </div><div class="mkt-card" data-name="Keyence" data-type="china_japan">
-                <div class="mkt-name">Keyence<span class="mkt-sym">6861.T</span></div>
-                <div class="mkt-price" data-field="price">57,870.00</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -6.28%</div>
-            </div><div class="mkt-card" data-name="Nintendo" data-type="china_japan">
-                <div class="mkt-name">Nintendo<span class="mkt-sym">7974.T</span></div>
-                <div class="mkt-price" data-field="price">8,606.00</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -0.85%</div>
-            </div></div>
-    <div class="sub-label" style="margin-top:18px">China &amp; Hong Kong (HKEX)</div><div class="intl-grid"><div class="mkt-card" data-name="Alibaba" data-type="china_japan">
-                <div class="mkt-name">Alibaba<span class="mkt-sym">9988.HK</span></div>
-                <div class="mkt-price" data-field="price">128.70</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -1.53%</div>
-            </div><div class="mkt-card" data-name="BYD" data-type="china_japan">
-                <div class="mkt-name">BYD<span class="mkt-sym">1211.HK</span></div>
-                <div class="mkt-price" data-field="price">98.05</div>
-                <div class="mkt-change" style="color:#22c55e" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> +3.54%</div>
-            </div><div class="mkt-card" data-name="Meituan" data-type="china_japan">
-                <div class="mkt-name">Meituan<span class="mkt-sym">3690.HK</span></div>
-                <div class="mkt-price" data-field="price">78.70</div>
-                <div class="mkt-change" style="color:#22c55e" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> +2.41%</div>
-            </div><div class="mkt-card" data-name="JD.com" data-type="china_japan">
-                <div class="mkt-name">JD.com<span class="mkt-sym">9618.HK</span></div>
-                <div class="mkt-price" data-field="price">105.50</div>
-                <div class="mkt-change" style="color:#ef4444" data-field="change"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg> -1.03%</div>
-            </div></div>
-</div>
-
-<!-- ===== SECTOR HEATMAP ===== -->
-<div class="sec-head"><h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg> Sector Predictions</h2><button class="btn btn-ghost" onclick="refreshSection('sectors')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button></div>
-<div class="hm-grid reveal reveal-d5">
-        <div class="hm-card" style="--sig:#22c55e">
-            <div class="hm-top">
-                <span class="hm-sector" style="color:#f59e0b">Oil Upstream (Producers)</span>
-                <span class="hm-signal" style="color:#22c55e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span>
-            </div>
-            <div class="hm-action" style="color:#22c55e">BUY</div>
-            <div class="hm-metrics">
-                <span>Exp: <strong style="color:#22c55e">-0.04%</strong></span>
-                <span>Acc: 66%</span>
-            </div>
-            <div class="hm-bar"><div class="hm-fill" style="width:66%;background:#22c55e"></div></div>
-            <div class="hm-score">Score: +1.99</div>
-        </div>
-        <div class="hm-card" style="--sig:#22c55e">
-            <div class="hm-top">
-                <span class="hm-sector" style="color:#3b82f6">Banking & Financials</span>
-                <span class="hm-signal" style="color:#22c55e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span>
-            </div>
-            <div class="hm-action" style="color:#22c55e">BUY (cautious)</div>
-            <div class="hm-metrics">
-                <span>Exp: <strong style="color:#22c55e">+1.09%</strong></span>
-                <span>Acc: 69%</span>
-            </div>
-            <div class="hm-bar"><div class="hm-fill" style="width:23%;background:#22c55e"></div></div>
-            <div class="hm-score">Score: +0.70</div>
-        </div>
-        <div class="hm-card" style="--sig:#22c55e">
-            <div class="hm-top">
-                <span class="hm-sector" style="color:#64748b">Metals & Mining</span>
-                <span class="hm-signal" style="color:#22c55e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span>
-            </div>
-            <div class="hm-action" style="color:#22c55e">BUY (cautious)</div>
-            <div class="hm-metrics">
-                <span>Exp: <strong style="color:#22c55e">+0.21%</strong></span>
-                <span>Acc: 70%</span>
-            </div>
-            <div class="hm-bar"><div class="hm-fill" style="width:8%;background:#22c55e"></div></div>
-            <div class="hm-score">Score: +0.23</div>
-        </div>
-        <div class="hm-card" style="--sig:#f59e0b">
-            <div class="hm-top">
-                <span class="hm-sector" style="color:#8b5cf6">IT & Technology</span>
-                <span class="hm-signal" style="color:#f59e0b"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span>
-            </div>
-            <div class="hm-action" style="color:#f59e0b">WAIT</div>
-            <div class="hm-metrics">
-                <span>Exp: <strong style="color:#f59e0b">+0.23%</strong></span>
-                <span>Acc: 69%</span>
-            </div>
-            <div class="hm-bar"><div class="hm-fill" style="width:5%;background:#f59e0b"></div></div>
-            <div class="hm-score">Score: +0.15</div>
-        </div>
-        <div class="hm-card" style="--sig:#f59e0b">
-            <div class="hm-top">
-                <span class="hm-sector" style="color:#22c55e">Pharma & Healthcare</span>
-                <span class="hm-signal" style="color:#f59e0b"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span>
-            </div>
-            <div class="hm-action" style="color:#f59e0b">WAIT</div>
-            <div class="hm-metrics">
-                <span>Exp: <strong style="color:#f59e0b">+0.31%</strong></span>
-                <span>Acc: 71%</span>
-            </div>
-            <div class="hm-bar"><div class="hm-fill" style="width:3%;background:#f59e0b"></div></div>
-            <div class="hm-score">Score: +0.10</div>
-        </div>
-        <div class="hm-card" style="--sig:#ef4444">
-            <div class="hm-top">
-                <span class="hm-sector" style="color:#ec4899">Auto & EV</span>
-                <span class="hm-signal" style="color:#ef4444"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg></span>
-            </div>
-            <div class="hm-action" style="color:#ef4444">SELL (cautious)</div>
-            <div class="hm-metrics">
-                <span>Exp: <strong style="color:#ef4444">+0.52%</strong></span>
-                <span>Acc: 71%</span>
-            </div>
-            <div class="hm-bar"><div class="hm-fill" style="width:7%;background:#ef4444"></div></div>
-            <div class="hm-score">Score: -0.21</div>
-        </div>
-        <div class="hm-card" style="--sig:#ef4444">
-            <div class="hm-top">
-                <span class="hm-sector" style="color:#dc2626">Oil Downstream (OMCs)</span>
-                <span class="hm-signal" style="color:#ef4444"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg></span>
-            </div>
-            <div class="hm-action" style="color:#ef4444">SELL</div>
-            <div class="hm-metrics">
-                <span>Exp: <strong style="color:#ef4444">+0.43%</strong></span>
-                <span>Acc: 68%</span>
-            </div>
-            <div class="hm-bar"><div class="hm-fill" style="width:41%;background:#ef4444"></div></div>
-            <div class="hm-score">Score: -1.23</div>
-        </div>
-        <div class="hm-card" style="--sig:#ef4444">
-            <div class="hm-top">
-                <span class="hm-sector" style="color:#06b6d4">FMCG & Consumer</span>
-                <span class="hm-signal" style="color:#ef4444"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg></span>
-            </div>
-            <div class="hm-action" style="color:#ef4444">SELL</div>
-            <div class="hm-metrics">
-                <span>Exp: <strong style="color:#ef4444">+0.30%</strong></span>
-                <span>Acc: 69%</span>
-            </div>
-            <div class="hm-bar"><div class="hm-fill" style="width:48%;background:#ef4444"></div></div>
-            <div class="hm-score">Score: -1.44</div>
-        </div></div>
-
-<!-- ===== SECTOR DEEP DIVE ===== -->
-<div class="sec-head"><h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> Sector Deep Dive</h2></div>
-<div class="deep-grid reveal reveal-d6">
-        <div class="deep-card">
-            <div class="deep-head">
-                <div class="deep-title-wrap">
-                    <div class="deep-dot" style="background:#f59e0b"></div>
-                    <div>
-                        <h3 class="deep-title">Oil Upstream (Producers)</h3>
-                        <p class="deep-desc">DIRECT BENEFICIARIES of crude spike — ONGC, Oil India rally when crude rises.</p>
-                    </div>
-                </div>
-                <div class="deep-badge" style="--sig:#22c55e">
-                    <span class="badge-action">BUY</span>
-                    <span class="badge-label">BULLISH</span>
-                </div>
-            </div>
-            <div class="kpi-row">
-                <div class="kpi"><span class="kpi-label">Global</span><span class="kpi-val" style="color:#22c55e">+4.14</span></div>
-                <div class="kpi"><span class="kpi-label">ML Score</span><span class="kpi-val" style="color:#22c55e">+0.55</span></div>
-                <div class="kpi kpi-main"><span class="kpi-label">Composite</span><span class="kpi-val" style="color:#22c55e;font-size:1.25rem">+1.99</span></div>
-                <div class="kpi"><span class="kpi-label">Exp. Move</span><span class="kpi-val" style="color:#ef4444">-0.04%</span></div>
-                <div class="kpi"><span class="kpi-label">Model Acc</span><span class="kpi-val">66%</span></div>
-                <div class="kpi"><span class="kpi-label">Confidence</span><span class="kpi-val">40%</span></div>
-            </div>
-            <div class="deep-tables">
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global Drivers</h4>
-                    <table><thead><tr><th>Driver</th><th>Change</th><th>Corr</th><th>Impact</th></tr></thead>
-                    <tbody><tr>
-                <td class="td-name">Crude Oil (WTI)</td>
-                <td style="color:#22c55e">+3.89%</td>
-                <td class="td-muted">+0.8</td>
-                <td style="color:#22c55e;font-weight:600">+2.25</td>
-            </tr><tr>
-                <td class="td-name">Brent Crude</td>
-                <td style="color:#22c55e">+6.77%</td>
-                <td class="td-muted">+0.8</td>
-                <td style="color:#22c55e;font-weight:600">+2.25</td>
-            </tr><tr>
-                <td class="td-name">Natural Gas</td>
-                <td style="color:#ef4444">-3.36%</td>
-                <td class="td-muted">+0.4</td>
-                <td style="color:#ef4444;font-weight:600">-1.20</td>
-            </tr><tr>
-                <td class="td-name">USD/INR</td>
-                <td style="color:#22c55e">+0.20%</td>
-                <td class="td-muted">+0.3</td>
-                <td style="color:#22c55e;font-weight:600">+0.06</td>
-            </tr><tr>
-                <td class="td-name">S&P 500</td>
-                <td style="color:#ef4444">-0.22%</td>
-                <td class="td-muted">+0.2</td>
-                <td style="color:#ef4444;font-weight:600">-0.04</td>
-            </tr></tbody></table>
-                </div>
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> ML Predictions (LSTM + XGBoost)</h4>
-                    <table><thead><tr><th>Stock</th><th>CMP</th><th>Direction</th><th>Exp.</th><th>Split</th></tr></thead>
-                    <tbody><tr data-stock="ONGC">
-                <td class="td-name">ONGC</td>
-                <td data-field="stock-price">270.80</td>
-                <td style="color:#ef4444">DOWN (50%)</td>
-                <td style="color:#ef4444">+0.08%</td>
-                <td class="td-muted">L:46% X:50%</td>
-            </tr><tr data-stock="OIL INDIA">
-                <td class="td-name">OIL INDIA</td>
-                <td data-field="stock-price">474.05</td>
-                <td style="color:#22c55e">UP (66%)</td>
-                <td style="color:#22c55e">+0.23%</td>
-                <td class="td-muted">L:41% X:69%</td>
-            </tr><tr data-stock="RELIANCE">
-                <td class="td-name">RELIANCE</td>
-                <td data-field="stock-price">1,424.00</td>
-                <td style="color:#22c55e">UP (51%)</td>
-                <td style="color:#22c55e">-0.43%</td>
-                <td class="td-muted">L:47% X:51%</td>
-            </tr></tbody></table>
-                </div>
-            </div>
-        </div>
-        <div class="deep-card">
-            <div class="deep-head">
-                <div class="deep-title-wrap">
-                    <div class="deep-dot" style="background:#3b82f6"></div>
-                    <div>
-                        <h3 class="deep-title">Banking & Financials</h3>
-                        <p class="deep-desc">Driven by FII flows, US yields, and rupee strength</p>
-                    </div>
-                </div>
-                <div class="deep-badge" style="--sig:#22c55e">
-                    <span class="badge-action">BUY (cautious)</span>
-                    <span class="badge-label">MILDLY BULLISH</span>
-                </div>
-            </div>
-            <div class="kpi-row">
-                <div class="kpi"><span class="kpi-label">Global</span><span class="kpi-val" style="color:#ef4444">-0.15</span></div>
-                <div class="kpi"><span class="kpi-label">ML Score</span><span class="kpi-val" style="color:#22c55e">+1.27</span></div>
-                <div class="kpi kpi-main"><span class="kpi-label">Composite</span><span class="kpi-val" style="color:#22c55e;font-size:1.25rem">+0.70</span></div>
-                <div class="kpi"><span class="kpi-label">Exp. Move</span><span class="kpi-val" style="color:#22c55e">+1.09%</span></div>
-                <div class="kpi"><span class="kpi-label">Model Acc</span><span class="kpi-val">69%</span></div>
-                <div class="kpi"><span class="kpi-label">Confidence</span><span class="kpi-val">14%</span></div>
-            </div>
-            <div class="deep-tables">
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global Drivers</h4>
-                    <table><thead><tr><th>Driver</th><th>Change</th><th>Corr</th><th>Impact</th></tr></thead>
-                    <tbody><tr>
-                <td class="td-name">Gold</td>
-                <td style="color:#ef4444">-1.29%</td>
-                <td class="td-muted">-0.2</td>
-                <td style="color:#22c55e;font-weight:600">+0.26</td>
-            </tr><tr>
-                <td class="td-name">S&P 500</td>
-                <td style="color:#ef4444">-0.22%</td>
-                <td class="td-muted">+0.6</td>
-                <td style="color:#ef4444;font-weight:600">-0.13</td>
-            </tr><tr>
-                <td class="td-name">USD/INR</td>
-                <td style="color:#22c55e">+0.20%</td>
-                <td class="td-muted">-0.6</td>
-                <td style="color:#ef4444;font-weight:600">-0.12</td>
-            </tr><tr>
-                <td class="td-name">Dollar Index</td>
-                <td style="color:#22c55e">+0.21%</td>
-                <td class="td-muted">-0.5</td>
-                <td style="color:#ef4444;font-weight:600">-0.10</td>
-            </tr><tr>
-                <td class="td-name">US 10Y Yield</td>
-                <td style="color:#ef4444">-0.05%</td>
-                <td class="td-muted">+0.7</td>
-                <td style="color:#ef4444;font-weight:600">-0.03</td>
-            </tr></tbody></table>
-                </div>
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> ML Predictions (LSTM + XGBoost)</h4>
-                    <table><thead><tr><th>Stock</th><th>CMP</th><th>Direction</th><th>Exp.</th><th>Split</th></tr></thead>
-                    <tbody><tr data-stock="HDFCBANK">
-                <td class="td-name">HDFCBANK</td>
-                <td data-field="stock-price">840.70</td>
-                <td style="color:#22c55e">UP (65%)</td>
-                <td style="color:#22c55e">+0.90%</td>
-                <td class="td-muted">L:51% X:86%</td>
-            </tr><tr data-stock="ICICIBANK">
-                <td class="td-name">ICICIBANK</td>
-                <td data-field="stock-price">1,278.40</td>
-                <td style="color:#22c55e">UP (70%)</td>
-                <td style="color:#22c55e">+1.35%</td>
-                <td class="td-muted">L:56% X:71%</td>
-            </tr><tr data-stock="KOTAKBANK">
-                <td class="td-name">KOTAKBANK</td>
-                <td data-field="stock-price">386.35</td>
-                <td style="color:#22c55e">UP (71%)</td>
-                <td style="color:#22c55e">+2.70%</td>
-                <td class="td-muted">L:43% X:74%</td>
-            </tr><tr data-stock="SBIN">
-                <td class="td-name">SBIN</td>
-                <td data-field="stock-price">1,098.50</td>
-                <td style="color:#22c55e">UP (55%)</td>
-                <td style="color:#22c55e">+0.37%</td>
-                <td class="td-muted">L:57% X:53%</td>
-            </tr><tr data-stock="BAJFINANCE">
-                <td class="td-name">BAJFINANCE</td>
-                <td data-field="stock-price">938.05</td>
-                <td style="color:#22c55e">UP (53%)</td>
-                <td style="color:#22c55e">+0.12%</td>
-                <td class="td-muted">L:48% X:56%</td>
-            </tr></tbody></table>
-                </div>
-            </div>
-        </div>
-        <div class="deep-card">
-            <div class="deep-head">
-                <div class="deep-title-wrap">
-                    <div class="deep-dot" style="background:#64748b"></div>
-                    <div>
-                        <h3 class="deep-title">Metals & Mining</h3>
-                        <p class="deep-desc">Tracks copper & China demand; Gold/Silver for precious metals</p>
-                    </div>
-                </div>
-                <div class="deep-badge" style="--sig:#22c55e">
-                    <span class="badge-action">BUY (cautious)</span>
-                    <span class="badge-label">MILDLY BULLISH</span>
-                </div>
-            </div>
-            <div class="kpi-row">
-                <div class="kpi"><span class="kpi-label">Global</span><span class="kpi-val" style="color:#ef4444">-0.34</span></div>
-                <div class="kpi"><span class="kpi-label">ML Score</span><span class="kpi-val" style="color:#22c55e">+0.61</span></div>
-                <div class="kpi kpi-main"><span class="kpi-label">Composite</span><span class="kpi-val" style="color:#22c55e;font-size:1.25rem">+0.23</span></div>
-                <div class="kpi"><span class="kpi-label">Exp. Move</span><span class="kpi-val" style="color:#22c55e">+0.21%</span></div>
-                <div class="kpi"><span class="kpi-label">Model Acc</span><span class="kpi-val">70%</span></div>
-                <div class="kpi"><span class="kpi-label">Confidence</span><span class="kpi-val">5%</span></div>
-            </div>
-            <div class="deep-tables">
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global Drivers</h4>
-                    <table><thead><tr><th>Driver</th><th>Change</th><th>Corr</th><th>Impact</th></tr></thead>
-                    <tbody><tr>
-                <td class="td-name">Copper</td>
-                <td style="color:#22c55e">+0.78%</td>
-                <td class="td-muted">+0.8</td>
-                <td style="color:#22c55e;font-weight:600">+0.62</td>
-            </tr><tr>
-                <td class="td-name">Hang Seng</td>
-                <td style="color:#ef4444">-1.35%</td>
-                <td class="td-muted">+0.4</td>
-                <td style="color:#ef4444;font-weight:600">-0.54</td>
-            </tr><tr>
-                <td class="td-name">Gold</td>
-                <td style="color:#ef4444">-1.29%</td>
-                <td class="td-muted">+0.3</td>
-                <td style="color:#ef4444;font-weight:600">-0.39</td>
-            </tr><tr>
-                <td class="td-name">Silver</td>
-                <td style="color:#22c55e">+0.22%</td>
-                <td class="td-muted">+0.5</td>
-                <td style="color:#22c55e;font-weight:600">+0.11</td>
-            </tr><tr>
-                <td class="td-name">S&P 500</td>
-                <td style="color:#ef4444">-0.22%</td>
-                <td class="td-muted">+0.3</td>
-                <td style="color:#ef4444;font-weight:600">-0.07</td>
-            </tr></tbody></table>
-                </div>
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> ML Predictions (LSTM + XGBoost)</h4>
-                    <table><thead><tr><th>Stock</th><th>CMP</th><th>Direction</th><th>Exp.</th><th>Split</th></tr></thead>
-                    <tbody><tr data-stock="TATASTEEL">
-                <td class="td-name">TATASTEEL</td>
-                <td data-field="stock-price">191.01</td>
-                <td style="color:#22c55e">UP (68%)</td>
-                <td style="color:#22c55e">+0.40%</td>
-                <td class="td-muted">L:40% X:71%</td>
-            </tr><tr data-stock="HINDALCO">
-                <td class="td-name">HINDALCO</td>
-                <td data-field="stock-price">945.35</td>
-                <td style="color:#ef4444">DOWN (39%)</td>
-                <td style="color:#ef4444">-0.38%</td>
-                <td class="td-muted">L:58% X:29%</td>
-            </tr><tr data-stock="JSWSTEEL">
-                <td class="td-name">JSWSTEEL</td>
-                <td data-field="stock-price">1,192.60</td>
-                <td style="color:#22c55e">UP (81%)</td>
-                <td style="color:#22c55e">+1.18%</td>
-                <td class="td-muted">L:43% X:85%</td>
-            </tr><tr data-stock="COALINDIA">
-                <td class="td-name">COALINDIA</td>
-                <td data-field="stock-price">437.65</td>
-                <td style="color:#ef4444">DOWN (36%)</td>
-                <td style="color:#ef4444">-0.36%</td>
-                <td class="td-muted">L:47% X:27%</td>
-            </tr></tbody></table>
-                </div>
-            </div>
-        </div>
-        <div class="deep-card">
-            <div class="deep-head">
-                <div class="deep-title-wrap">
-                    <div class="deep-dot" style="background:#8b5cf6"></div>
-                    <div>
-                        <h3 class="deep-title">IT & Technology</h3>
-                        <p class="deep-desc">Directly tracks NASDAQ; benefits from weak rupee (dollar earners)</p>
-                    </div>
-                </div>
-                <div class="deep-badge" style="--sig:#f59e0b">
-                    <span class="badge-action">WAIT</span>
-                    <span class="badge-label">NEUTRAL</span>
-                </div>
-            </div>
-            <div class="kpi-row">
-                <div class="kpi"><span class="kpi-label">Global</span><span class="kpi-val" style="color:#22c55e">+0.38</span></div>
-                <div class="kpi"><span class="kpi-label">ML Score</span><span class="kpi-val" style="color:#22c55e">+0.00</span></div>
-                <div class="kpi kpi-main"><span class="kpi-label">Composite</span><span class="kpi-val" style="color:#f59e0b;font-size:1.25rem">+0.15</span></div>
-                <div class="kpi"><span class="kpi-label">Exp. Move</span><span class="kpi-val" style="color:#22c55e">+0.23%</span></div>
-                <div class="kpi"><span class="kpi-label">Model Acc</span><span class="kpi-val">69%</span></div>
-                <div class="kpi"><span class="kpi-label">Confidence</span><span class="kpi-val">3%</span></div>
-            </div>
-            <div class="deep-tables">
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global Drivers</h4>
-                    <table><thead><tr><th>Driver</th><th>Change</th><th>Corr</th><th>Impact</th></tr></thead>
-                    <tbody><tr>
-                <td class="td-name">NASDAQ</td>
-                <td style="color:#22c55e">+0.26%</td>
-                <td class="td-muted">+0.8</td>
-                <td style="color:#22c55e;font-weight:600">+0.22</td>
-            </tr><tr>
-                <td class="td-name">USD/INR</td>
-                <td style="color:#22c55e">+0.20%</td>
-                <td class="td-muted">+0.6</td>
-                <td style="color:#22c55e;font-weight:600">+0.12</td>
-            </tr><tr>
-                <td class="td-name">S&P 500</td>
-                <td style="color:#ef4444">-0.22%</td>
-                <td class="td-muted">+0.5</td>
-                <td style="color:#ef4444;font-weight:600">-0.11</td>
-            </tr><tr>
-                <td class="td-name">Dollar Index</td>
-                <td style="color:#22c55e">+0.21%</td>
-                <td class="td-muted">+0.5</td>
-                <td style="color:#22c55e;font-weight:600">+0.10</td>
-            </tr><tr>
-                <td class="td-name">US 10Y Yield</td>
-                <td style="color:#ef4444">-0.05%</td>
-                <td class="td-muted">-0.3</td>
-                <td style="color:#22c55e;font-weight:600">+0.02</td>
-            </tr></tbody></table>
-                </div>
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> ML Predictions (LSTM + XGBoost)</h4>
-                    <table><thead><tr><th>Stock</th><th>CMP</th><th>Direction</th><th>Exp.</th><th>Split</th></tr></thead>
-                    <tbody><tr data-stock="TCS">
-                <td class="td-name">TCS</td>
-                <td data-field="stock-price">2,527.40</td>
-                <td style="color:#22c55e">UP (52%)</td>
-                <td style="color:#22c55e">+0.04%</td>
-                <td class="td-muted">L:48% X:69%</td>
-            </tr><tr data-stock="INFY">
-                <td class="td-name">INFY</td>
-                <td data-field="stock-price">1,315.00</td>
-                <td style="color:#ef4444">DOWN (42%)</td>
-                <td style="color:#ef4444">-0.03%</td>
-                <td class="td-muted">L:49% X:37%</td>
-            </tr><tr data-stock="WIPRO">
-                <td class="td-name">WIPRO</td>
-                <td data-field="stock-price">198.75</td>
-                <td style="color:#ef4444">DOWN (47%)</td>
-                <td style="color:#ef4444">+0.02%</td>
-                <td class="td-muted">L:55% X:46%</td>
-            </tr><tr data-stock="HCLTECH">
-                <td class="td-name">HCLTECH</td>
-                <td data-field="stock-price">1,358.60</td>
-                <td style="color:#ef4444">DOWN (42%)</td>
-                <td style="color:#ef4444">-0.03%</td>
-                <td class="td-muted">L:51% X:34%</td>
-            </tr><tr data-stock="TECHM">
-                <td class="td-name">TECHM</td>
-                <td data-field="stock-price">1,336.30</td>
-                <td style="color:#22c55e">UP (66%)</td>
-                <td style="color:#22c55e">+1.18%</td>
-                <td class="td-muted">L:50% X:76%</td>
-            </tr></tbody></table>
-                </div>
-            </div>
-        </div>
-        <div class="deep-card">
-            <div class="deep-head">
-                <div class="deep-title-wrap">
-                    <div class="deep-dot" style="background:#22c55e"></div>
-                    <div>
-                        <h3 class="deep-title">Pharma & Healthcare</h3>
-                        <p class="deep-desc">Defensive sector; benefits from weak rupee; mild global correlation</p>
-                    </div>
-                </div>
-                <div class="deep-badge" style="--sig:#f59e0b">
-                    <span class="badge-action">WAIT</span>
-                    <span class="badge-label">NEUTRAL</span>
-                </div>
-            </div>
-            <div class="kpi-row">
-                <div class="kpi"><span class="kpi-label">Global</span><span class="kpi-val" style="color:#ef4444">-1.34</span></div>
-                <div class="kpi"><span class="kpi-label">ML Score</span><span class="kpi-val" style="color:#22c55e">+1.05</span></div>
-                <div class="kpi kpi-main"><span class="kpi-label">Composite</span><span class="kpi-val" style="color:#f59e0b;font-size:1.25rem">+0.10</span></div>
-                <div class="kpi"><span class="kpi-label">Exp. Move</span><span class="kpi-val" style="color:#22c55e">+0.31%</span></div>
-                <div class="kpi"><span class="kpi-label">Model Acc</span><span class="kpi-val">71%</span></div>
-                <div class="kpi"><span class="kpi-label">Confidence</span><span class="kpi-val">2%</span></div>
-            </div>
-            <div class="deep-tables">
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global Drivers</h4>
-                    <table><thead><tr><th>Driver</th><th>Change</th><th>Corr</th><th>Impact</th></tr></thead>
-                    <tbody><tr>
-                <td class="td-name">Gold</td>
-                <td style="color:#ef4444">-1.29%</td>
-                <td class="td-muted">+0.3</td>
-                <td style="color:#ef4444;font-weight:600">-0.39</td>
-            </tr><tr>
-                <td class="td-name">Crude Oil (WTI)</td>
-                <td style="color:#22c55e">+3.89%</td>
-                <td class="td-muted">-0.1</td>
-                <td style="color:#ef4444;font-weight:600">-0.30</td>
-            </tr><tr>
-                <td class="td-name">USD/INR</td>
-                <td style="color:#22c55e">+0.20%</td>
-                <td class="td-muted">+0.5</td>
-                <td style="color:#22c55e;font-weight:600">+0.10</td>
-            </tr><tr>
-                <td class="td-name">NASDAQ</td>
-                <td style="color:#22c55e">+0.26%</td>
-                <td class="td-muted">+0.2</td>
-                <td style="color:#22c55e;font-weight:600">+0.05</td>
-            </tr><tr>
-                <td class="td-name">S&P 500</td>
-                <td style="color:#ef4444">-0.22%</td>
-                <td class="td-muted">+0.2</td>
-                <td style="color:#ef4444;font-weight:600">-0.04</td>
-            </tr></tbody></table>
-                </div>
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> ML Predictions (LSTM + XGBoost)</h4>
-                    <table><thead><tr><th>Stock</th><th>CMP</th><th>Direction</th><th>Exp.</th><th>Split</th></tr></thead>
-                    <tbody><tr data-stock="SUNPHARMA">
-                <td class="td-name">SUNPHARMA</td>
-                <td data-field="stock-price">1,807.40</td>
-                <td style="color:#ef4444">DOWN (41%)</td>
-                <td style="color:#ef4444">-0.34%</td>
-                <td class="td-muted">L:51% X:24%</td>
-            </tr><tr data-stock="DRREDDY">
-                <td class="td-name">DRREDDY</td>
-                <td data-field="stock-price">1,287.00</td>
-                <td style="color:#22c55e">UP (66%)</td>
-                <td style="color:#22c55e">+0.27%</td>
-                <td class="td-muted">L:52% X:68%</td>
-            </tr><tr data-stock="CIPLA">
-                <td class="td-name">CIPLA</td>
-                <td data-field="stock-price">1,325.00</td>
-                <td style="color:#22c55e">UP (61%)</td>
-                <td style="color:#22c55e">+0.33%</td>
-                <td class="td-muted">L:56% X:65%</td>
-            </tr><tr data-stock="DIVISLAB">
-                <td class="td-name">DIVISLAB</td>
-                <td data-field="stock-price">6,330.00</td>
-                <td style="color:#22c55e">UP (74%)</td>
-                <td style="color:#22c55e">+0.96%</td>
-                <td class="td-muted">L:51% X:80%</td>
-            </tr></tbody></table>
-                </div>
-            </div>
-        </div>
-        <div class="deep-card">
-            <div class="deep-head">
-                <div class="deep-title-wrap">
-                    <div class="deep-dot" style="background:#ec4899"></div>
-                    <div>
-                        <h3 class="deep-title">Auto & EV</h3>
-                        <p class="deep-desc">Hurt by crude spikes and rupee weakness; linked to consumer sentiment</p>
-                    </div>
-                </div>
-                <div class="deep-badge" style="--sig:#ef4444">
-                    <span class="badge-action">SELL (cautious)</span>
-                    <span class="badge-label">MILDLY BEARISH</span>
-                </div>
-            </div>
-            <div class="kpi-row">
-                <div class="kpi"><span class="kpi-label">Global</span><span class="kpi-val" style="color:#ef4444">-2.59</span></div>
-                <div class="kpi"><span class="kpi-label">ML Score</span><span class="kpi-val" style="color:#22c55e">+1.37</span></div>
-                <div class="kpi kpi-main"><span class="kpi-label">Composite</span><span class="kpi-val" style="color:#ef4444;font-size:1.25rem">-0.21</span></div>
-                <div class="kpi"><span class="kpi-label">Exp. Move</span><span class="kpi-val" style="color:#22c55e">+0.52%</span></div>
-                <div class="kpi"><span class="kpi-label">Model Acc</span><span class="kpi-val">71%</span></div>
-                <div class="kpi"><span class="kpi-label">Confidence</span><span class="kpi-val">4%</span></div>
-            </div>
-            <div class="deep-tables">
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global Drivers</h4>
-                    <table><thead><tr><th>Driver</th><th>Change</th><th>Corr</th><th>Impact</th></tr></thead>
-                    <tbody><tr>
-                <td class="td-name">Crude Oil (WTI)</td>
-                <td style="color:#22c55e">+3.89%</td>
-                <td class="td-muted">-0.5</td>
-                <td style="color:#ef4444;font-weight:600">-1.50</td>
-            </tr><tr>
-                <td class="td-name">Copper</td>
-                <td style="color:#22c55e">+0.78%</td>
-                <td class="td-muted">+0.3</td>
-                <td style="color:#22c55e;font-weight:600">+0.23</td>
-            </tr><tr>
-                <td class="td-name">S&P 500</td>
-                <td style="color:#ef4444">-0.22%</td>
-                <td class="td-muted">+0.3</td>
-                <td style="color:#ef4444;font-weight:600">-0.07</td>
-            </tr><tr>
-                <td class="td-name">USD/INR</td>
-                <td style="color:#22c55e">+0.20%</td>
-                <td class="td-muted">-0.3</td>
-                <td style="color:#ef4444;font-weight:600">-0.06</td>
-            </tr><tr>
-                <td class="td-name">US 10Y Yield</td>
-                <td style="color:#ef4444">-0.05%</td>
-                <td class="td-muted">-0.2</td>
-                <td style="color:#22c55e;font-weight:600">+0.01</td>
-            </tr></tbody></table>
-                </div>
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> ML Predictions (LSTM + XGBoost)</h4>
-                    <table><thead><tr><th>Stock</th><th>CMP</th><th>Direction</th><th>Exp.</th><th>Split</th></tr></thead>
-                    <tbody><tr data-stock="TATAMOTORS"><td class="td-name">TATAMOTORS</td><td colspan="4" class="td-muted">No model</td></tr><tr data-stock="M&M">
-                <td class="td-name">M&M</td>
-                <td data-field="stock-price">3,187.60</td>
-                <td style="color:#22c55e">UP (55%)</td>
-                <td style="color:#22c55e">+0.62%</td>
-                <td class="td-muted">L:44% X:72%</td>
-            </tr><tr data-stock="MARUTI">
-                <td class="td-name">MARUTI</td>
-                <td data-field="stock-price">13,508.00</td>
-                <td style="color:#22c55e">UP (60%)</td>
-                <td style="color:#22c55e">+0.19%</td>
-                <td class="td-muted">L:47% X:71%</td>
-            </tr><tr data-stock="BAJAJ-AUTO">
-                <td class="td-name">BAJAJ-AUTO</td>
-                <td data-field="stock-price">9,383.00</td>
-                <td style="color:#22c55e">UP (76%)</td>
-                <td style="color:#22c55e">+0.74%</td>
-                <td class="td-muted">L:48% X:79%</td>
-            </tr></tbody></table>
-                </div>
-            </div>
-        </div>
-        <div class="deep-card">
-            <div class="deep-head">
-                <div class="deep-title-wrap">
-                    <div class="deep-dot" style="background:#dc2626"></div>
-                    <div>
-                        <h3 class="deep-title">Oil Downstream (OMCs)</h3>
-                        <p class="deep-desc">WORST HIT by crude spike — buy crude at high prices, can't pass on costs.</p>
-                    </div>
-                </div>
-                <div class="deep-badge" style="--sig:#ef4444">
-                    <span class="badge-action">SELL</span>
-                    <span class="badge-label">BEARISH</span>
-                </div>
-            </div>
-            <div class="kpi-row">
-                <div class="kpi"><span class="kpi-label">Global</span><span class="kpi-val" style="color:#ef4444">-4.52</span></div>
-                <div class="kpi"><span class="kpi-label">ML Score</span><span class="kpi-val" style="color:#22c55e">+0.95</span></div>
-                <div class="kpi kpi-main"><span class="kpi-label">Composite</span><span class="kpi-val" style="color:#ef4444;font-size:1.25rem">-1.23</span></div>
-                <div class="kpi"><span class="kpi-label">Exp. Move</span><span class="kpi-val" style="color:#22c55e">+0.43%</span></div>
-                <div class="kpi"><span class="kpi-label">Model Acc</span><span class="kpi-val">68%</span></div>
-                <div class="kpi"><span class="kpi-label">Confidence</span><span class="kpi-val">25%</span></div>
-            </div>
-            <div class="deep-tables">
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global Drivers</h4>
-                    <table><thead><tr><th>Driver</th><th>Change</th><th>Corr</th><th>Impact</th></tr></thead>
-                    <tbody><tr>
-                <td class="td-name">Crude Oil (WTI)</td>
-                <td style="color:#22c55e">+3.89%</td>
-                <td class="td-muted">-0.8</td>
-                <td style="color:#ef4444;font-weight:600">-2.40</td>
-            </tr><tr>
-                <td class="td-name">Brent Crude</td>
-                <td style="color:#22c55e">+6.77%</td>
-                <td class="td-muted">-0.8</td>
-                <td style="color:#ef4444;font-weight:600">-2.40</td>
-            </tr><tr>
-                <td class="td-name">Natural Gas</td>
-                <td style="color:#ef4444">-3.36%</td>
-                <td class="td-muted">-0.3</td>
-                <td style="color:#22c55e;font-weight:600">+0.90</td>
-            </tr><tr>
-                <td class="td-name">USD/INR</td>
-                <td style="color:#22c55e">+0.20%</td>
-                <td class="td-muted">-0.6</td>
-                <td style="color:#ef4444;font-weight:600">-0.12</td>
-            </tr><tr>
-                <td class="td-name">S&P 500</td>
-                <td style="color:#ef4444">-0.22%</td>
-                <td class="td-muted">+0.2</td>
-                <td style="color:#ef4444;font-weight:600">-0.04</td>
-            </tr></tbody></table>
-                </div>
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> ML Predictions (LSTM + XGBoost)</h4>
-                    <table><thead><tr><th>Stock</th><th>CMP</th><th>Direction</th><th>Exp.</th><th>Split</th></tr></thead>
-                    <tbody><tr data-stock="BPCL">
-                <td class="td-name">BPCL</td>
-                <td data-field="stock-price">331.15</td>
-                <td style="color:#22c55e">UP (55%)</td>
-                <td style="color:#22c55e">-0.08%</td>
-                <td class="td-muted">L:37% X:60%</td>
-            </tr><tr data-stock="IOC">
-                <td class="td-name">IOC</td>
-                <td data-field="stock-price">161.22</td>
-                <td style="color:#22c55e">UP (72%)</td>
-                <td style="color:#22c55e">+0.61%</td>
-                <td class="td-muted">L:60% X:74%</td>
-            </tr><tr data-stock="HINDPETRO">
-                <td class="td-name">HINDPETRO</td>
-                <td data-field="stock-price">384.55</td>
-                <td style="color:#22c55e">UP (52%)</td>
-                <td style="color:#22c55e">+0.77%</td>
-                <td class="td-muted">L:52% X:52%</td>
-            </tr></tbody></table>
-                </div>
-            </div>
-        </div>
-        <div class="deep-card">
-            <div class="deep-head">
-                <div class="deep-title-wrap">
-                    <div class="deep-dot" style="background:#06b6d4"></div>
-                    <div>
-                        <h3 class="deep-title">FMCG & Consumer</h3>
-                        <p class="deep-desc">Defensive safe haven; benefits when markets are fearful (high VIX)</p>
-                    </div>
-                </div>
-                <div class="deep-badge" style="--sig:#ef4444">
-                    <span class="badge-action">SELL</span>
-                    <span class="badge-label">BEARISH</span>
-                </div>
-            </div>
-            <div class="kpi-row">
-                <div class="kpi"><span class="kpi-label">Global</span><span class="kpi-val" style="color:#ef4444">-5.00</span></div>
-                <div class="kpi"><span class="kpi-label">ML Score</span><span class="kpi-val" style="color:#22c55e">+0.93</span></div>
-                <div class="kpi kpi-main"><span class="kpi-label">Composite</span><span class="kpi-val" style="color:#ef4444;font-size:1.25rem">-1.44</span></div>
-                <div class="kpi"><span class="kpi-label">Exp. Move</span><span class="kpi-val" style="color:#22c55e">+0.30%</span></div>
-                <div class="kpi"><span class="kpi-label">Model Acc</span><span class="kpi-val">69%</span></div>
-                <div class="kpi"><span class="kpi-label">Confidence</span><span class="kpi-val">29%</span></div>
-            </div>
-            <div class="deep-tables">
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global Drivers</h4>
-                    <table><thead><tr><th>Driver</th><th>Change</th><th>Corr</th><th>Impact</th></tr></thead>
-                    <tbody><tr>
-                <td class="td-name">Crude Oil (WTI)</td>
-                <td style="color:#22c55e">+3.89%</td>
-                <td class="td-muted">-0.3</td>
-                <td style="color:#ef4444;font-weight:600">-0.90</td>
-            </tr><tr>
-                <td class="td-name">US VIX</td>
-                <td style="color:#ef4444">-9.74%</td>
-                <td class="td-muted">+0.3</td>
-                <td style="color:#ef4444;font-weight:600">-0.90</td>
-            </tr><tr>
-                <td class="td-name">Gold</td>
-                <td style="color:#ef4444">-1.29%</td>
-                <td class="td-muted">+0.3</td>
-                <td style="color:#ef4444;font-weight:600">-0.39</td>
-            </tr><tr>
-                <td class="td-name">USD/INR</td>
-                <td style="color:#22c55e">+0.20%</td>
-                <td class="td-muted">-0.2</td>
-                <td style="color:#ef4444;font-weight:600">-0.04</td>
-            </tr><tr>
-                <td class="td-name">S&P 500</td>
-                <td style="color:#ef4444">-0.22%</td>
-                <td class="td-muted">+0.1</td>
-                <td style="color:#ef4444;font-weight:600">-0.03</td>
-            </tr></tbody></table>
-                </div>
-                <div class="dtable">
-                    <h4 class="dtable-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> ML Predictions (LSTM + XGBoost)</h4>
-                    <table><thead><tr><th>Stock</th><th>CMP</th><th>Direction</th><th>Exp.</th><th>Split</th></tr></thead>
-                    <tbody><tr data-stock="HINDUNILVR">
-                <td class="td-name">HINDUNILVR</td>
-                <td data-field="stock-price">2,194.60</td>
-                <td style="color:#22c55e">UP (61%)</td>
-                <td style="color:#22c55e">+0.60%</td>
-                <td class="td-muted">L:52% X:88%</td>
-            </tr><tr data-stock="ITC">
-                <td class="td-name">ITC</td>
-                <td data-field="stock-price">306.00</td>
-                <td style="color:#22c55e">UP (59%)</td>
-                <td style="color:#22c55e">+0.17%</td>
-                <td class="td-muted">L:48% X:86%</td>
-            </tr><tr data-stock="NESTLEIND">
-                <td class="td-name">NESTLEIND</td>
-                <td data-field="stock-price">1,235.80</td>
-                <td style="color:#22c55e">UP (54%)</td>
-                <td style="color:#22c55e">+0.12%</td>
-                <td class="td-muted">L:51% X:61%</td>
-            </tr><tr data-stock="BRITANNIA">
-                <td class="td-name">BRITANNIA</td>
-                <td data-field="stock-price">5,890.00</td>
-                <td style="color:#22c55e">UP (63%)</td>
-                <td style="color:#22c55e">+0.33%</td>
-                <td class="td-muted">L:55% X:76%</td>
-            </tr></tbody></table>
-                </div>
-            </div>
-        </div></div>
-
-<!-- ===== DISCLAIMER ===== -->
-<div class="disclaimer reveal">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-    <p><strong>Disclaimer:</strong> This is an ML-based analysis tool for educational purposes only. Models are trained on historical data and cannot predict black-swan events. Accuracy figures are from validation data. Do your own research and consult a SEBI-registered advisor.</p>
-</div>
-<div class="footer">v4 &middot; LSTM + XGBoost Ensemble &middot; TradingView Data &middot; TensorFlow + scikit-learn</div>
-
-</div><!-- /app -->
 
 <script>
-/* ===== REAL-TIME PRICE UPDATE ENGINE ===== */
-// Auto-detect: use localhost when local, relative URLs on Vercel
-const IS_LOCAL=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const SERVER=IS_LOCAL?'http://localhost:8080':'';
-let priceTimer=null;
-let autoTimer=null;
-let isLive=false;
-const UP_SVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>';
-const DN_SVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>';
+const API = '/api/prices.php';
+let refreshTimer = null;
 
-function fmt(n){return n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function pctFmt(n){return(n>=0?'+':'')+n.toFixed(2)+'%'}
-function clr(n){return n>=0?'#22c55e':'#ef4444'}
-function arrow(n){return n>=0?UP_SVG:DN_SVG}
-
-function flashCard(el){
-    el.style.transition='none';
-    el.style.boxShadow='0 0 16px rgba(59,130,246,.2)';
-    setTimeout(()=>{el.style.transition='box-shadow .8s ease';el.style.boxShadow='none'},50);
+function fmt(n) {
+  if (n == null) return '--';
+  return Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function chgHtml(pct) {
+  if (pct == null) return '<span style="color:var(--muted)">--</span>';
+  const c = pct >= 0 ? 'var(--green)' : 'var(--red)';
+  const arrow = pct >= 0 ? '&#9650;' : '&#9660;';
+  return `<span style="color:${c};font-weight:600">${arrow} ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</span>`;
+}
+function tableRow(name, price, pct) {
+  return `<tr><td style="font-weight:500">${name}</td><td>${fmt(price)}</td><td>${chgHtml(pct)}</td></tr>`;
 }
 
-function updateCard(el, close, chg){
-    const priceEl=el.querySelector('[data-field="price"]');
-    const changeEl=el.querySelector('[data-field="change"]');
-    if(priceEl){
-        const oldVal=priceEl.textContent.replace(/,/g,'');
-        const newVal=fmt(close);
-        if(oldVal!==newVal.replace(/,/g,'')){
-            priceEl.textContent=newVal;
-            flashCard(el);
-        }
-    }
-    if(changeEl){
-        changeEl.innerHTML=arrow(chg)+' '+pctFmt(chg);
-        changeEl.style.color=clr(chg);
-    }
+function setStatus(ok) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  if (ok) { dot.className = 'live'; txt.textContent = 'Live'; }
+  else { dot.className = 'error'; txt.textContent = 'Error'; }
 }
 
-async function fetchPrices(){
-    const statusEl=document.getElementById('connStatus');
-    const timeEl=document.getElementById('lastUpdate');
-    try{
-        const r=await fetch(SERVER+'/api/prices',{signal:AbortSignal.timeout(60000)});
-        const data=await r.json();
-        if(data.error)return;
-
-        // Update global market cards
-        if(data.global){
-            document.querySelectorAll('[data-type="global"]').forEach(el=>{
-                const name=el.dataset.name;
-                if(data.global[name])updateCard(el,data.global[name].close,data.global[name].change_pct);
-            });
-        }
-        // Update broad market cards
-        if(data.broad){
-            document.querySelectorAll('[data-type="broad"]').forEach(el=>{
-                const name=el.dataset.name;
-                if(data.broad[name])updateCard(el,data.broad[name].close,data.broad[name].change_pct);
-            });
-        }
-        // Update China/Japan cards
-        if(data.china_japan){
-            document.querySelectorAll('[data-type="china_japan"]').forEach(el=>{
-                const name=el.dataset.name;
-                if(data.china_japan[name])updateCard(el,data.china_japan[name].close,data.china_japan[name].change_pct);
-            });
-        }
-        // Update stock CMP in deep-dive tables
-        if(data.stocks){
-            document.querySelectorAll('[data-stock]').forEach(el=>{
-                const sname=el.dataset.stock;
-                if(data.stocks[sname]){
-                    const td=el.querySelector('[data-field="stock-price"]');
-                    if(td){
-                        const old=td.textContent.replace(/,/g,'');
-                        const nv=fmt(data.stocks[sname].close);
-                        if(old!==nv.replace(/,/g,'')){
-                            td.textContent=nv;
-                            td.style.transition='none';
-                            td.style.color='#3b82f6';
-                            setTimeout(()=>{td.style.transition='color .8s';td.style.color='#cbd5e1'},50);
-                        }
-                    }
-                }
-            });
-        }
-
-        // Update status
-        if(!isLive){isLive=true;if(statusEl)statusEl.innerHTML='<span class="live-dot"></span> Connected';}
-        if(timeEl)timeEl.textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    }catch(e){
-        if(statusEl&&isLive){statusEl.innerHTML='<span style="color:#f59e0b">Offline — prices static</span>';isLive=false;}
-    }
+function updateTopbar(data) {
+  const tickers = document.getElementById('topbar-tickers');
+  const items = [];
+  // Broad market
+  (data.broad || []).forEach(b => {
+    const c = (b.changePct||0) >= 0 ? 'var(--green)' : 'var(--red)';
+    items.push(`<span><strong>${b.name}</strong>: ${fmt(b.price)} <span style="color:${c}">${(b.changePct||0) >= 0?'+':''}${(b.changePct||0).toFixed(2)}%</span></span>`);
+  });
+  // VIX
+  (data.vix || []).forEach(v => {
+    const c = v.name === 'India VIX' ? ((v.price||0) > 20 ? 'var(--red)' : 'var(--green)') : 'var(--muted)';
+    items.push(`<span>${v.name}: <strong style="color:${c}">${fmt(v.price)}</strong></span>`);
+  });
+  tickers.innerHTML = items.join('<span style="color:var(--border)">&middot;</span>');
 }
 
-function refreshAll(){
-    if(!IS_LOCAL){fetchPrices();return;}
-    const btn=document.getElementById('refreshAll');
-    btn.classList.add('loading');
-    fetch(SERVER+'/api/refresh',{signal:AbortSignal.timeout(180000)})
-        .then(r=>r.json()).then(()=>window.location.reload())
-        .catch(()=>{fetchPrices();btn.classList.remove('loading')});
+function updateSummary(data) {
+  const nifty = (data.broad||[]).find(b => b.name === 'NIFTY 50');
+  const bnifty = (data.broad||[]).find(b => b.name === 'BANKNIFTY');
+  const ivix = (data.vix||[]).find(v => v.name === 'India VIX');
+
+  if (nifty) {
+    document.getElementById('s-nifty').textContent = fmt(nifty.price);
+    document.getElementById('s-nifty-chg').innerHTML = chgHtml(nifty.changePct);
+  }
+  if (bnifty) {
+    document.getElementById('s-bnifty').textContent = fmt(bnifty.price);
+    document.getElementById('s-bnifty-chg').innerHTML = chgHtml(bnifty.changePct);
+  }
+  if (ivix) {
+    const v = ivix.price || 0;
+    const vc = v > 25 ? 'var(--red)' : (v > 20 ? '#b45309' : (v > 15 ? '#b45309' : 'var(--green)'));
+    const label = v > 25 ? 'EXTREME FEAR' : (v > 20 ? 'HIGH FEAR' : (v > 15 ? 'ELEVATED' : 'CALM'));
+    document.getElementById('s-vix').innerHTML = `<span style="color:${vc}">${v.toFixed(2)}</span>`;
+    document.getElementById('s-vix-label').textContent = label;
+  }
+
+  // Mood from sector averages
+  const sectors = data.sectors || [];
+  if (sectors.length) {
+    const avg = sectors.reduce((s,x) => s + (x.avgChange||0), 0) / sectors.length;
+    let mood, mc;
+    if (avg > 1) { mood = 'BULLISH'; mc = 'var(--green)'; }
+    else if (avg > 0) { mood = 'MILDLY BULLISH'; mc = 'var(--green)'; }
+    else if (avg < -1) { mood = 'BEARISH'; mc = 'var(--red)'; }
+    else if (avg < 0) { mood = 'MILDLY BEARISH'; mc = 'var(--red)'; }
+    else { mood = 'NEUTRAL'; mc = '#b45309'; }
+    const bull = sectors.filter(s => (s.avgChange||0) > 0.2).length;
+    const bear = sectors.filter(s => (s.avgChange||0) < -0.2).length;
+    document.getElementById('s-mood').innerHTML = `<span style="color:${mc}">${mood}</span>`;
+    document.getElementById('s-mood-sub').textContent = `${bull} bullish / ${bear} bearish sectors`;
+  }
 }
 
-function refreshSection(s){fetchPrices()}
-
-function toggleAutoRefresh(){
-    const on=document.getElementById('autoRefresh').checked;
-    if(on){
-        if(!priceTimer)priceTimer=setInterval(fetchPrices,30000);
-        autoTimer=setInterval(refreshAll,300000);
-    }else{
-        if(priceTimer){clearInterval(priceTimer);priceTimer=null}
-        if(autoTimer){clearInterval(autoTimer);autoTimer=null}
-    }
+function fillTable(id, items) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = (items||[]).map(i => tableRow(i.name, i.price, i.changePct)).join('');
 }
 
-// Boot: try connecting to live server immediately
-document.getElementById('lastUpdate').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-fetch(SERVER+'/api/status',{signal:AbortSignal.timeout(3000)}).then(r=>r.json()).then(d=>{
-    isLive=true;
-    const s=document.getElementById('connStatus');
-    if(s)s.innerHTML='<span class="live-dot"></span> Connected';
-    // Start auto-polling prices every 30s
-    fetchPrices();
-    priceTimer=setInterval(fetchPrices,30000);
-}).catch(()=>{
-    if(!IS_LOCAL){
-        // On Vercel: prices API is always available via serverless function
-        fetchPrices();
-        priceTimer=setInterval(fetchPrices,30000);
-        const s=document.getElementById('connStatus');
-        if(s)s.innerHTML='<span class="live-dot"></span> Vercel Live';
-    }else{
-        const s=document.getElementById('connStatus');
-        if(s)s.innerHTML='<span style="color:#64748b">Start live_server.py for real-time updates</span>';
-    }
-});
+function updateGlobal(data) {
+  const g = data.global || [];
+  const americas = ['S&P 500','NASDAQ','Dow Jones','Russell 2000'];
+  const europe = ['FTSE 100','DAX','CAC 40'];
+  const asia = ['Nikkei 225','TOPIX','Hang Seng','Shanghai','Shenzhen','CSI 300','KOSPI'];
+
+  fillTable('tbl-americas', g.filter(x => americas.includes(x.name)));
+  fillTable('tbl-europe', g.filter(x => europe.includes(x.name)));
+  fillTable('tbl-asia', g.filter(x => asia.includes(x.name)));
+
+  const c = data.commodities || [];
+  const energy = ['Crude Oil WTI','Brent Crude','Natural Gas'];
+  const metals = ['Gold','Silver','Copper'];
+  const fx = ['USD/INR','US 10Y Yield','Dollar Index'];
+  fillTable('tbl-energy', c.filter(x => energy.includes(x.name)));
+  fillTable('tbl-metals', c.filter(x => metals.includes(x.name)));
+  fillTable('tbl-fx', c.filter(x => fx.includes(x.name)));
+
+  fillTable('tbl-cj', data.china_japan || []);
+}
+
+function updateSectors(data) {
+  const grid = document.getElementById('sector-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  (data.sectors || []).forEach(sec => {
+    const avg = sec.avgChange || 0;
+    const cls = avg > 0.1 ? 'up' : (avg < -0.1 ? 'down' : 'flat');
+    const arrow = avg >= 0 ? '&#9650;' : '&#9660;';
+    let rows = '';
+    (sec.stocks || []).forEach(st => {
+      const sc = (st.changePct||0) >= 0 ? 'up-text' : 'down-text';
+      const a = (st.changePct||0) >= 0 ? '&#9650;' : '&#9660;';
+      rows += `<div class="stock-row"><span class="stock-name">${st.name}</span><span class="stock-price">${fmt(st.price)}</span><span class="stock-chg ${sc}">${a} ${(st.changePct||0) >= 0?'+':''}${(st.changePct||0).toFixed(2)}%</span></div>`;
+    });
+    grid.innerHTML += `<div class="card sector-card"><div class="sector-header"><span class="sector-name">${sec.name}</span><span class="sector-badge ${cls}">${arrow} ${avg >= 0?'+':''}${avg.toFixed(2)}%</span></div>${rows}</div>`;
+  });
+}
+
+function updateMapPins(data) {
+  const pins = document.getElementById('map-pins');
+  if (!pins) return;
+  // Pin positions (% from top-left of map)
+  const locs = [
+    {name:'S&P 500',x:22,y:30},{name:'FTSE 100',x:46,y:22},{name:'DAX',x:50,y:22},
+    {name:'Nikkei 225',x:82,y:30},{name:'Hang Seng',x:75,y:42},{name:'Shanghai',x:73,y:34},
+    {name:'NIFTY 50',x:66,y:42},{name:'KOSPI',x:79,y:30}
+  ];
+  const all = [...(data.global||[]), ...(data.broad||[])];
+  pins.innerHTML = '';
+  locs.forEach(loc => {
+    const d = all.find(x => x.name === loc.name);
+    const c = d && d.changePct != null ? (d.changePct >= 0 ? 'var(--green)' : 'var(--red)') : '#ccc';
+    pins.innerHTML += `<div class="map-pin" style="left:${loc.x}%;top:${loc.y}%;background:${c}" title="${loc.name}: ${d ? (d.changePct>=0?'+':'') + d.changePct.toFixed(2) + '%' : 'N/A'}"></div>`;
+  });
+}
+
+async function refreshData() {
+  try {
+    const r = await fetch(API + '?t=' + Date.now());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    updateTopbar(data);
+    updateSummary(data);
+    updateGlobal(data);
+    updateSectors(data);
+    updateMapPins(data);
+    setStatus(true);
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+  } catch(e) {
+    console.error('Fetch error:', e);
+    setStatus(false);
+  }
+}
+
+// Initial load + auto-refresh every 60s
+refreshData();
+refreshTimer = setInterval(refreshData, 60000);
 </script>
-</body></html>
+</body>
+</html>

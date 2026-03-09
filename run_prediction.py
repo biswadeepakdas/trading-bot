@@ -314,6 +314,14 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
     us_vix_val = global_data.get('US VIX', dict(close=0)).get('close', 0)
     us_vix_chg = global_data.get('US VIX', dict(change_pct=0)).get('change_pct', 0)
 
+    # Pre-extract broad market values (avoids f-string escaping issues with {{}})
+    nifty = broad_data.get('NIFTY 50', {})
+    nifty_close = nifty.get('close', 0)
+    nifty_chg = nifty.get('change_pct', 0)
+    bnifty = broad_data.get('BANKNIFTY', {})
+    bnifty_close = bnifty.get('close', 0)
+    bnifty_chg = bnifty.get('change_pct', 0)
+
     # Gauge rotation helper: maps -5..+5 composite to -90..+90 degrees
     gauge_deg = max(min(avg_composite / 5 * 90, 90), -90)
 
@@ -904,3 +912,27 @@ if __name__ == '__main__':
         run_all_backtests(instruments)
     else:
         run_predictions()
+
+    # ── Auto-upload to ProFreeHost ──
+    html_path = os.path.join(OUTPUT_DIR, "index.html")
+    if os.path.exists(html_path):
+        print("\n" + "=" * 65)
+        print("  UPLOADING TO PROFREEHOST")
+        print("=" * 65)
+        try:
+            import ftplib
+            FTP_HOST = "ftpupload.net"
+            FTP_USER = "ezyro_41347592"
+            FTP_PASS = "524656b51"
+            ftp = ftplib.FTP(FTP_HOST, timeout=60)
+            ftp.login(FTP_USER, FTP_PASS)
+            ftp.cwd("/htdocs")
+            file_size = os.path.getsize(html_path)
+            print(f"  Uploading index.html ({file_size:,} bytes)...")
+            with open(html_path, "rb") as f:
+                ftp.storbinary("STOR index.html", f)
+            ftp.quit()
+            print("  ✓ Dashboard uploaded to tradingbot.unaux.com")
+        except Exception as e:
+            print(f"  ✗ Upload failed: {e}")
+            print("    You can manually upload public/index.html via FTP")

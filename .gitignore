@@ -6,3 +6,4 @@ reports/*.html
 *.log
 .env
 .vercel
+venv/
