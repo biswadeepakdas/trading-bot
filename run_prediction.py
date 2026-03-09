@@ -688,8 +688,8 @@ body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg
 <!-- TOP BAR -->
 <div class="topbar reveal">
     <div class="topbar-left">
-        <span class="topbar-ticker" data-name="NIFTY 50" data-type="broad">NIFTY 50: <strong>{broad_data.get('NIFTY 50',{{}}).get('close',0):,.2f}</strong> <span style="color:{val_color(broad_data.get('NIFTY 50',{{}}).get('change_pct',0))}">{broad_data.get('NIFTY 50',{{}}).get('change_pct',0):+.2f}%</span></span>
-        <span class="topbar-ticker" data-name="BANKNIFTY" data-type="broad">BANKNIFTY: <strong>{broad_data.get('BANKNIFTY',{{}}).get('close',0):,.2f}</strong> <span style="color:{val_color(broad_data.get('BANKNIFTY',{{}}).get('change_pct',0))}">{broad_data.get('BANKNIFTY',{{}}).get('change_pct',0):+.2f}%</span></span>
+        <span class="topbar-ticker" data-name="NIFTY 50" data-type="broad">NIFTY 50: <strong>{nifty_close:,.2f}</strong> <span style="color:{val_color(nifty_chg)}">{nifty_chg:+.2f}%</span></span>
+        <span class="topbar-ticker" data-name="BANKNIFTY" data-type="broad">BANKNIFTY: <strong>{bnifty_close:,.2f}</strong> <span style="color:{val_color(bnifty_chg)}">{bnifty_chg:+.2f}%</span></span>
         <span class="topbar-ticker">India VIX: <strong style="color:{vix_color}">{vix_val:.2f}</strong></span>
     </div>
     <div class="topbar-right">
