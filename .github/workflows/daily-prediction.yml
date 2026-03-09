@@ -2,8 +2,8 @@ name: Daily Market Prediction
 
 on:
   schedule:
-    # Runs Mon-Fri at 3:20 AM UTC = 8:50 AM IST (before market opens)
-    - cron: '20 3 * * 1-5'
+    # Runs Mon-Fri at 3:45 AM UTC = 9:15 AM IST (market open)
+    - cron: '45 3 * * 1-5'
   workflow_dispatch:  # Manual trigger button in GitHub UI
 
 jobs:
