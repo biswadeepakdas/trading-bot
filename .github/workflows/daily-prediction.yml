@@ -1,0 +1,46 @@
+name: Daily Market Prediction
+
+on:
+  schedule:
+    # Runs Mon-Fri at 3:20 AM UTC = 8:50 AM IST (before market opens)
+    - cron: '20 3 * * 1-5'
+  workflow_dispatch:  # Manual trigger button in GitHub UI
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install numpy>=1.26.0,\<2.0.0 pandas tensorflow xgboost scikit-learn \
+            scipy matplotlib ta pandas-ta vmdpy yfinance
+
+      - name: Run predictions
+        run: python run_prediction.py
+
+      - name: Upload dashboard to ProFreeHost
+        run: |
+          python -c "
+          import ftplib, os
+          ftp = ftplib.FTP('${{ secrets.FTP_HOST }}', timeout=60)
+          ftp.login('${{ secrets.FTP_USER }}', '${{ secrets.FTP_PASS }}')
+          ftp.cwd('/htdocs')
+          html = 'public/index.html'
+          print(f'Uploading {os.path.getsize(html):,} bytes...')
+          with open(html, 'rb') as f:
+              ftp.storbinary('STOR index.html', f)
+          ftp.quit()
+          print('Done! Dashboard live at tradingbot.unaux.com')
+          "
