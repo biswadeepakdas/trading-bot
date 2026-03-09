@@ -299,18 +299,18 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
     bearish = sum(1 for s in sectors_data.values() if s['composite_score'] < -0.2)
     neutral = len(sectors_data) - bullish - bearish
 
-    if avg_composite > 1: mood, mood_color = 'BULLISH', '#22c55e'
-    elif avg_composite > 0: mood, mood_color = 'MILDLY BULLISH', '#4ade80'
-    elif avg_composite < -1: mood, mood_color = 'BEARISH', '#ef4444'
-    elif avg_composite < 0: mood, mood_color = 'MILDLY BEARISH', '#f87171'
-    else: mood, mood_color = 'NEUTRAL', '#f59e0b'
+    if avg_composite > 1: mood, mood_color = 'BULLISH', '#0e7c6b'
+    elif avg_composite > 0: mood, mood_color = 'MILDLY BULLISH', '#34b89a'
+    elif avg_composite < -1: mood, mood_color = 'BEARISH', '#dc2646'
+    elif avg_composite < 0: mood, mood_color = 'MILDLY BEARISH', '#e85d6f'
+    else: mood, mood_color = 'NEUTRAL', '#b45309'
 
     # VIX data
     vix = global_data.get('India VIX', {})
     vix_val = vix.get('close', 0)
     vix_chg = vix.get('change_pct', 0)
     vix_status = 'EXTREME FEAR' if vix_val > 25 else ('HIGH FEAR' if vix_val > 20 else ('ELEVATED' if vix_val > 15 else 'CALM'))
-    vix_color = '#ef4444' if vix_val > 20 else ('#f59e0b' if vix_val > 15 else '#10b981')
+    vix_color = '#dc2646' if vix_val > 20 else ('#b45309' if vix_val > 15 else '#0e7c6b')
     us_vix_val = global_data.get('US VIX', dict(close=0)).get('close', 0)
     us_vix_chg = global_data.get('US VIX', dict(change_pct=0)).get('change_pct', 0)
 
@@ -332,66 +332,78 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
         return svg_trending_up if change >= 0 else svg_trending_down
 
     def val_color(change):
-        return '#22c55e' if change >= 0 else '#ef4444'
+        return '#0e7c6b' if change >= 0 else '#dc2646'
 
-    # Build global market cards
-    def global_cards(markets, section_id):
-        html = ""
-        for name in markets:
-            d = global_data.get(name)
+    # ---------- World Map: position markets geographically ----------
+    map_pins = {
+        'S&P 500': (18, 42), 'NASDAQ': (18, 48), 'Dow Jones': (18, 54), 'Russell 2000': (18, 60),
+        'FTSE 100': (46, 32), 'DAX (Germany)': (50, 35), 'CAC 40 (France)': (47, 40),
+        'Nikkei 225': (86, 38), 'TOPIX (Japan)': (86, 44),
+        'Hang Seng': (80, 48), 'Hang Seng Tech': (80, 54),
+        'Shanghai Composite': (77, 40), 'Shenzhen Component': (77, 46), 'CSI 300 (China)': (77, 52),
+        'KOSPI': (83, 36),
+        'NIFTY 50': (70, 52), 'BANKNIFTY': (70, 58),
+        'Crude Oil (WTI)': (22, 70), 'Brent Crude': (22, 76), 'Gold': (28, 70), 'Silver': (28, 76),
+        'Copper': (34, 70), 'Natural Gas': (34, 76),
+        'USD/INR': (40, 70), 'US 10Y Yield': (40, 76), 'Dollar Index': (46, 70),
+        'India VIX': (70, 64), 'US VIX': (22, 64),
+    }
+
+    def map_pin_html(name, x, y, data):
+        if not data: return ''
+        c = val_color(data['change_pct'])
+        return f'<div class="map-pin" style="left:{x}%;top:{y}%" data-name="{name}" data-type="global"><span class="map-pin-name">{name}</span> <span class="map-pin-val" style="color:{c}" data-field="change">{data["change_pct"]:+.2f}%</span></div>'
+
+    map_pins_html = ''
+    all_map_data = {**global_data, **broad_data}
+    for name, (x, y) in map_pins.items():
+        d = all_map_data.get(name)
+        if d:
+            map_pins_html += map_pin_html(name, x, y, d)
+
+    # ---------- Market table rows ----------
+    def mkt_table_rows(markets_dict, source_data):
+        rows = ''
+        for name in markets_dict:
+            d = source_data.get(name)
             if not d: continue
             c = val_color(d['change_pct'])
-            html += f'''<div class="mkt-card" data-name="{name}" data-type="global">
-                <div class="mkt-name">{name}</div>
-                <div class="mkt-price" data-field="price">{d["close"]:,.2f}</div>
-                <div class="mkt-change" style="color:{c}" data-field="change">{arrow_icon(d["change_pct"])} {d["change_pct"]:+.2f}%</div>
-            </div>'''
-        return html
+            rows += f'<tr data-name="{name}" data-type="global"><td class="td-name">{name}</td><td class="td-chg" style="color:{c}" data-field="change">{d["change_pct"]:+.2f}%</td><td class="td-price" data-field="price">{d["close"]:,.2f}</td></tr>'
+        return rows
 
-    us_html = global_cards(US_MARKETS.keys(), 'us')
-    eu_html = global_cards(EUROPE_MARKETS.keys(), 'eu')
-    asia_html = global_cards(ASIA_MARKETS.keys(), 'asia')
-    comm_html = global_cards(COMMODITIES_FX.keys(), 'comm')
+    us_rows = mkt_table_rows(US_MARKETS, global_data)
+    eu_rows = mkt_table_rows(EUROPE_MARKETS, global_data)
+    asia_rows = mkt_table_rows(ASIA_MARKETS, global_data)
+    comm_rows = mkt_table_rows(COMMODITIES_FX, global_data)
 
-    # China & Japan cards
-    japan_stocks = {k: v for k, v in china_japan_data.items() if k in ['Toyota', 'Sony', 'SoftBank', 'Keyence', 'Nintendo']}
-    china_stocks = {k: v for k, v in china_japan_data.items() if k in ['Alibaba', 'Tencent', 'BYD', 'Meituan', 'JD.com', 'PetroChina']}
-
-    def intl_stock_cards(stocks_dict):
-        html = ""
+    def intl_rows(stocks_dict):
+        rows = ''
         for name, d in stocks_dict.items():
             c = val_color(d['change_pct'])
-            html += f'''<div class="mkt-card" data-name="{name}" data-type="china_japan">
-                <div class="mkt-name">{name}<span class="mkt-sym">{d.get("symbol","")}</span></div>
-                <div class="mkt-price" data-field="price">{d["close"]:,.2f}</div>
-                <div class="mkt-change" style="color:{c}" data-field="change">{arrow_icon(d["change_pct"])} {d["change_pct"]:+.2f}%</div>
-            </div>'''
-        return html
+            rows += f'<tr data-name="{name}" data-type="china_japan"><td class="td-name">{name}</td><td class="td-chg" style="color:{c}" data-field="change">{d["change_pct"]:+.2f}%</td><td class="td-price" data-field="price">{d["close"]:,.2f}</td></tr>'
+        return rows
 
-    japan_html = intl_stock_cards(japan_stocks)
-    china_html = intl_stock_cards(china_stocks)
+    japan_stocks = {k: v for k, v in china_japan_data.items() if k in ['Toyota', 'Sony', 'SoftBank', 'Keyence', 'Nintendo']}
+    china_stocks = {k: v for k, v in china_japan_data.items() if k in ['Alibaba', 'Tencent', 'BYD', 'Meituan', 'JD.com', 'PetroChina']}
+    japan_rows = intl_rows(japan_stocks)
+    china_rows = intl_rows(china_stocks)
 
-    # Broad market
-    broad_cards = ""
+    broad_cards = ''
     for name, d in broad_data.items():
         c = val_color(d['change_pct'])
-        broad_cards += f'''<div class="broad-card" data-name="{name}" data-type="broad">
-            <div class="broad-label">{name}</div>
-            <div class="broad-price" data-field="price">{d["close"]:,.2f}</div>
-            <div class="broad-chg" style="color:{c}" data-field="change">{arrow_icon(d["change_pct"])} {d["change_pct"]:+.2f}%</div>
-        </div>'''
+        broad_cards += f'<div class="broad-card" data-name="{name}" data-type="broad"><div class="broad-label">{name}</div><div class="broad-price" data-field="price">{d["close"]:,.2f}</div><div class="broad-chg" style="color:{c}" data-field="change">{arrow_icon(d["change_pct"])} {d["change_pct"]:+.2f}%</div></div>'
 
     # Sector heatmap
     sorted_sectors = sorted(sectors_data.values(), key=lambda x: x['composite_score'], reverse=True)
     heatmap_html = ""
     for s in sorted_sectors:
         sc = s['composite_score']
-        ac = '#22c55e' if 'BUY' in s['action'] else ('#ef4444' if 'SELL' in s['action'] else '#f59e0b')
+        ac = '#0e7c6b' if 'BUY' in s['action'] else ('#dc2646' if 'SELL' in s['action'] else '#b45309')
         bar_w = min(abs(sc) / 3 * 100, 100)
         mag = s['expected_magnitude']
         mag_str = f"{mag:+.2f}%" if mag != 0 else "N/A"
         signal_icon = svg_trending_up if 'BUY' in s['action'] else (svg_trending_down if 'SELL' in s['action'] else svg_activity)
-        heatmap_html += f'''
+        heatmap_html += f"""
         <div class="hm-card" style="--sig:{ac}">
             <div class="hm-top">
                 <span class="hm-sector" style="color:{s['color']}">{s['sector']}</span>
@@ -404,46 +416,44 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
             </div>
             <div class="hm-bar"><div class="hm-fill" style="width:{bar_w:.0f}%;background:{ac}"></div></div>
             <div class="hm-score">Score: {sc:+.2f}</div>
-        </div>'''
+        </div>"""
 
     # Sector deep-dive cards
     sector_cards_html = ""
     for s in sorted_sectors:
-        ac = '#22c55e' if 'BUY' in s['action'] else ('#ef4444' if 'SELL' in s['action'] else '#f59e0b')
+        ac = '#0e7c6b' if 'BUY' in s['action'] else ('#dc2646' if 'SELL' in s['action'] else '#b45309')
         mag = s['expected_magnitude']
 
-        # Global drivers rows
         gd_rows = ""
         for d in s['global_details'][:5]:
             ic = val_color(d['impact'])
             gc = val_color(d['change'])
-            gd_rows += f'''<tr>
+            gd_rows += f"""<tr>
                 <td class="td-name">{d["driver"]}</td>
                 <td style="color:{gc}">{d["change"]:+.2f}%</td>
                 <td class="td-muted">{d["correlation"]:+.1f}</td>
                 <td style="color:{ic};font-weight:600">{d["impact"]:+.2f}</td>
-            </tr>'''
+            </tr>"""
 
-        # Stock predictions rows
         stock_rows = ""
         for sname, pred in s.get('stock_predictions', {}).items():
             if pred is None:
                 stock_rows += f'<tr data-stock="{sname}"><td class="td-name">{sname}</td><td colspan="4" class="td-muted">No model</td></tr>'
                 continue
             dc = val_color(1 if pred['direction'] == 'UP' else -1)
-            stock_rows += f'''<tr data-stock="{sname}">
+            stock_rows += f"""<tr data-stock="{sname}">
                 <td class="td-name">{sname}</td>
                 <td data-field="stock-price">{pred['close']:,.2f}</td>
                 <td style="color:{dc}">{pred['direction']} ({pred['probability']:.0%})</td>
                 <td style="color:{dc}">{pred['magnitude_pct']:+.2f}%</td>
                 <td class="td-muted">L:{pred['lstm_prob']:.0%} X:{pred['xgb_prob']:.0%}</td>
-            </tr>'''
+            </tr>"""
 
         gs_c = val_color(s['global_score'])
         ml_c = val_color(s['ml_score'])
         mg_c = val_color(mag)
 
-        sector_cards_html += f'''
+        sector_cards_html += f"""
         <div class="deep-card">
             <div class="deep-head">
                 <div class="deep-title-wrap">
@@ -478,7 +488,7 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
                     <tbody>{stock_rows}</tbody></table>
                 </div>
             </div>
-        </div>'''
+        </div>"""
 
     # Model accuracy stats
     all_accs = [s['model_accuracy'] for s in sectors_data.values() if s['model_accuracy'] > 0]
@@ -487,392 +497,325 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
 
     html = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Market Prediction Dashboard &mdash; {report_date}</title>
+<title>Market Prediction &mdash; {report_date}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   DESIGN TOKENS
-   ============================================================ */
 :root{{
-  /* Surfaces */
-  --bg-base:#020617;
-  --bg-card:#0a101e;
-  --bg-elevated:#101827;
-  --bg-hover:#141c2e;
-  /* Borders */
-  --border:#172033;
-  --border-hover:rgba(99,136,199,.18);
-  --border-accent:rgba(59,130,246,.22);
-  /* Text */
-  --text-primary:#f1f5f9;
-  --text-secondary:#94a3b8;
-  --text-muted:#4b5c78;
-  /* Accent */
-  --accent:#3b82f6;
-  --accent-glow:rgba(59,130,246,.08);
-  /* Semantic */
-  --green:#22c55e;
-  --red:#ef4444;
-  --amber:#f59e0b;
-  /* Spacing */
-  --gap:20px;
+  --bg:#ffffff;
+  --bg-page:#f8fafb;
+  --bg-card:#ffffff;
+  --bg-hover:#f1f5f9;
+  --border:#e2e8f0;
+  --border-hover:#cbd5e1;
+  --text:#0f172a;
+  --text-secondary:#475569;
+  --text-muted:#94a3b8;
+  --accent:#0e7c6b;
+  --accent-light:#ecfdf5;
+  --green:#0e7c6b;
+  --red:#dc2646;
+  --amber:#b45309;
   --radius:14px;
   --radius-sm:10px;
-  --radius-xs:7px;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.02);
+  --shadow-md:0 4px 12px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.06);
 }}
-
-/* ============================================================
-   RESET & BASE
-   ============================================================ */
 *,*::before,*::after{{margin:0;padding:0;box-sizing:border-box}}
-html{{font-size:16px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;scroll-behavior:smooth}}
-body{{
-  font-family:'Inter',system-ui,-apple-system,sans-serif;
-  background:var(--bg-base);
-  color:var(--text-primary);
-  min-height:100vh;
-  line-height:1.6;
-  font-variant-numeric:tabular-nums;
-}}
-@media(prefers-reduced-motion:reduce){{*,*::before,*::after{{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}}}
+html{{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}}
+body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg-page);color:var(--text);min-height:100vh;line-height:1.6;font-variant-numeric:tabular-nums}}
+@media(prefers-reduced-motion:reduce){{*{{animation-duration:0s!important;transition-duration:0s!important}}}}
+.app{{max-width:1480px;margin:0 auto;padding:0}}
 
-/* ============================================================
-   LAYOUT
-   ============================================================ */
-.app{{max-width:1440px;margin:0 auto;padding:32px 40px 56px}}
-@media(max-width:768px){{.app{{padding:20px 16px 40px}}}}
-
-/* ============================================================
-   HEADER
-   ============================================================ */
-.header{{display:flex;align-items:center;justify-content:space-between;padding:28px 32px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:var(--gap);flex-wrap:wrap;gap:16px;position:relative;overflow:hidden}}
-.header::before{{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(59,130,246,.15),transparent)}}
-.header-left{{display:flex;align-items:center;gap:16px}}
-.logo-mark{{width:44px;height:44px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}}
-.header h1{{font-size:1.35rem;font-weight:700;color:var(--text-primary);letter-spacing:-.03em;line-height:1.2}}
-.header-sub{{font-size:.8rem;color:var(--text-muted);font-weight:400;margin-top:2px}}
-.header-right{{display:flex;align-items:center;gap:10px;flex-wrap:wrap}}
-.tag{{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--radius-xs);font-size:.72rem;font-weight:500;letter-spacing:.01em}}
-.tag-ml{{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);color:var(--accent)}}
-.tag-live{{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);color:var(--green)}}
+/* Top bar */
+.topbar{{display:flex;align-items:center;justify-content:space-between;padding:10px 32px;background:var(--bg);border-bottom:1px solid var(--border);font-size:.78rem;flex-wrap:wrap;gap:8px}}
+.topbar-left{{display:flex;align-items:center;gap:20px;color:var(--text-secondary)}}
+.topbar-ticker{{display:inline-flex;align-items:center;gap:6px;font-weight:500}}
+.topbar-right{{display:flex;align-items:center;gap:12px}}
 .live-dot{{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2.5s ease-in-out infinite}}
 @keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.25}}}}
 
-/* ============================================================
-   TOOLBAR
-   ============================================================ */
-.toolbar{{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:28px;flex-wrap:wrap;gap:10px}}
-.toolbar-left{{display:flex;align-items:center;gap:12px;font-size:.78rem;color:var(--text-secondary)}}
-.toolbar-left .gen-time{{color:var(--text-primary);font-weight:500}}
-.btn{{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--radius-xs);font-size:.78rem;font-weight:600;border:none;cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);font-family:inherit}}
+/* Header */
+.header{{display:flex;align-items:center;justify-content:space-between;padding:22px 32px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}}
+.header h1{{font-size:1.4rem;font-weight:700;letter-spacing:-.03em;color:var(--text)}}
+.header-right{{display:flex;align-items:center;gap:10px}}
+.btn{{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:var(--radius-sm);font-size:.78rem;font-weight:600;border:1px solid var(--border);cursor:pointer;transition:all .2s;font-family:inherit;background:var(--bg);color:var(--text-secondary)}}
+.btn:hover{{border-color:var(--border-hover);color:var(--text);background:var(--bg-hover)}}
 .btn:focus-visible{{outline:2px solid var(--accent);outline-offset:2px}}
-.btn-primary{{background:var(--accent);color:#fff}}
-.btn-primary:hover{{filter:brightness(1.12);box-shadow:0 4px 20px rgba(59,130,246,.2)}}
-.btn-primary:active{{transform:scale(.98)}}
-.btn-primary.loading{{opacity:.6;pointer-events:none}}
-.btn-ghost{{background:transparent;border:1px solid var(--border);color:var(--text-secondary)}}
-.btn-ghost:hover{{border-color:rgba(59,130,246,.2);color:var(--text-primary);background:var(--accent-glow)}}
-.auto-label{{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text-muted);cursor:pointer}}
-.auto-label input{{accent-color:var(--accent);cursor:pointer}}
+.btn-primary{{background:var(--accent);color:#fff;border-color:var(--accent)}}
+.btn-primary:hover{{filter:brightness(1.08);color:#fff;background:var(--accent)}}
+.btn-primary.loading{{opacity:.5;pointer-events:none}}
+.auto-label{{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--text-muted);cursor:pointer}}
+.auto-label input{{accent-color:var(--accent)}}
+.tag{{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:.7rem;font-weight:500}}
+.tag-ml{{background:rgba(14,124,107,.06);color:var(--accent)}}
+.tag-live{{background:rgba(14,124,107,.06);color:var(--green)}}
 
-/* ============================================================
-   MOOD SECTION
-   ============================================================ */
-.mood-section{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap);margin-bottom:28px}}
-@media(max-width:900px){{.mood-section{{grid-template-columns:1fr}}}}
-.mood-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;transition:border-color .25s}}
-.mood-card:hover{{border-color:var(--border-hover)}}
-.mood-card.main{{border-color:{mood_color}18;position:relative;overflow:hidden}}
-.mood-card.main::after{{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba({",".join(str(int(mood_color[i:i+2],16)) for i in (1,3,5))},.04),transparent 70%);pointer-events:none}}
-.mood-label{{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.14em;font-weight:600;margin-bottom:8px}}
-.mood-value{{font-size:2.2rem;font-weight:800;color:{mood_color};letter-spacing:-.03em;line-height:1.1}}
-.mood-meta{{font-size:.8rem;color:var(--text-secondary);margin-top:8px}}
-.mood-breakdown{{display:flex;justify-content:center;gap:32px;margin-top:14px}}
-.mood-stat{{text-align:center}}
-.mood-stat-val{{font-size:1.6rem;font-weight:700;line-height:1.2}}
-.mood-stat-label{{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}}
+/* Body */
+.body{{padding:28px 32px}}
+@media(max-width:768px){{.body{{padding:16px}}}}
 
-/* ============================================================
-   VIX STRIP
-   ============================================================ */
-.vix-strip{{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap);margin-bottom:28px}}
-@media(max-width:768px){{.vix-strip{{grid-template-columns:1fr}}}}
-.vix-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;display:flex;align-items:center;gap:16px;transition:border-color .25s}}
-.vix-card:hover{{border-color:var(--border-hover)}}
-.vix-icon{{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}}
-.vix-info .vix-label{{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}}
-.vix-info .vix-val{{font-size:1.15rem;font-weight:700;margin-top:2px}}
+/* Map */
+.map-section{{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:var(--shadow)}}
+.map-section h2{{font-size:1.05rem;font-weight:700;margin-bottom:18px;letter-spacing:-.02em;color:var(--text)}}
+.map-container{{position:relative;width:100%;aspect-ratio:2.4/1;background:linear-gradient(135deg,#f0faf7 0%,#eef5f2 50%,#f5f7fa 100%);border-radius:var(--radius-sm);overflow:hidden}}
+.map-svg{{position:absolute;inset:0;width:100%;height:100%;opacity:.3}}
+.map-pin{{position:absolute;display:flex;align-items:center;gap:4px;font-size:.66rem;font-weight:600;white-space:nowrap;z-index:2;cursor:default;transition:transform .2s,opacity .2s;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.75);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:1px solid rgba(0,0,0,.04)}}
+.map-pin:hover{{transform:scale(1.08);z-index:10;background:rgba(255,255,255,.95);box-shadow:var(--shadow-md)}}
+.map-pin-name{{color:var(--text);font-weight:600;font-size:.62rem}}
+.map-pin-val{{font-weight:700;font-size:.7rem}}
+.map-legend{{display:flex;gap:20px;margin-top:14px;font-size:.7rem;color:var(--text-muted)}}
+.map-legend span{{display:flex;align-items:center;gap:4px}}
+.map-legend-dot{{width:8px;height:8px;border-radius:50%}}
 
-/* ============================================================
-   BROAD MARKET
-   ============================================================ */
-.broad-row{{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--gap);margin-bottom:32px}}
-.broad-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;transition:border-color .25s,box-shadow .25s}}
-.broad-card:hover{{border-color:var(--border-accent);box-shadow:0 0 32px rgba(59,130,246,.04)}}
-.broad-label{{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.12em;font-weight:600}}
-.broad-price{{font-size:1.75rem;font-weight:700;margin:6px 0;color:var(--text-primary);line-height:1.2}}
-.broad-chg{{display:inline-flex;align-items:center;gap:4px;font-size:.88rem;font-weight:600}}
+/* Summary */
+.summary-row{{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}}
+@media(max-width:900px){{.summary-row{{grid-template-columns:1fr 1fr}}}}
+@media(max-width:500px){{.summary-row{{grid-template-columns:1fr}}}}
+.summary-card{{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);transition:box-shadow .25s}}
+.summary-card:hover{{box-shadow:var(--shadow-md)}}
+.summary-label{{font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-bottom:6px}}
+.summary-value{{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;line-height:1.2}}
+.summary-meta{{font-size:.75rem;color:var(--text-secondary);margin-top:4px}}
+.summary-breakdown{{display:flex;gap:16px;margin-top:8px}}
+.summary-stat-val{{font-size:1.1rem;font-weight:700}}
+.summary-stat-label{{font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}}
 
-/* ============================================================
-   SECTION HEADERS
-   ============================================================ */
-.sec-head{{display:flex;align-items:center;justify-content:space-between;margin:36px 0 18px;padding-bottom:12px;border-bottom:1px solid var(--border)}}
-.sec-head h2{{font-size:1rem;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:10px;letter-spacing:-.01em}}
-.sec-head h2 svg{{color:var(--accent);opacity:.7}}
+/* Broad */
+.broad-row{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}}
+.broad-card{{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center;box-shadow:var(--shadow);transition:all .25s}}
+.broad-card:hover{{box-shadow:var(--shadow-md);transform:translateY(-1px)}}
+.broad-label{{font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}}
+.broad-price{{font-size:1.4rem;font-weight:700;margin:4px 0;color:var(--text)}}
+.broad-chg{{display:inline-flex;align-items:center;gap:4px;font-size:.82rem;font-weight:600}}
 
-/* ============================================================
-   MARKET CARDS GRID
-   ============================================================ */
-.mkt-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}}
-.mkt-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center;transition:border-color .25s,box-shadow .25s;cursor:default}}
-.mkt-card:hover{{border-color:var(--border-hover);box-shadow:0 0 24px rgba(59,130,246,.03)}}
-.mkt-name{{font-size:.67rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.mkt-sym{{font-size:.52rem;color:var(--text-muted);margin-left:3px;text-transform:none;letter-spacing:0;font-weight:400;opacity:.6}}
-.mkt-price{{font-size:.95rem;font-weight:600;color:var(--text-primary);margin:3px 0}}
-.mkt-change{{display:inline-flex;align-items:center;gap:3px;font-size:.76rem;font-weight:600}}
+/* Tables grid */
+.tables-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:24px}}
+.table-card{{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}}
+.table-card h3{{font-size:.82rem;font-weight:700;margin-bottom:14px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;color:var(--text)}}
+.table-card h3 svg{{color:var(--accent);opacity:.6}}
+.table-card table{{width:100%;border-collapse:collapse;font-size:.78rem}}
+.table-card th{{text-align:left;font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;padding:6px 0;border-bottom:1px solid var(--border)}}
+.table-card th:last-child,.table-card td:last-child{{text-align:right}}
+.table-card th:nth-child(2),.table-card td:nth-child(2){{text-align:right}}
+.table-card td{{padding:8px 0;border-bottom:1px solid #f1f5f9;color:var(--text-secondary)}}
+.table-card tbody tr{{transition:background .15s}}
+.table-card tbody tr:hover{{background:var(--bg-hover)}}
+.td-name{{font-weight:500;color:var(--text)}}
+.td-chg{{font-weight:600}}
+.td-price{{color:var(--text-secondary);font-variant-numeric:tabular-nums}}
 
-.sub-label{{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin:18px 0 10px;display:flex;align-items:center;gap:8px}}
-.sub-label::after{{content:'';flex:1;height:1px;background:var(--border)}}
+/* Section headers */
+.sec-head{{display:flex;align-items:center;justify-content:space-between;margin:30px 0 16px;padding-bottom:10px;border-bottom:2px solid var(--border)}}
+.sec-head h2{{font-size:1rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;letter-spacing:-.01em}}
+.sec-head h2 svg{{color:var(--accent)}}
 
-/* ============================================================
-   CHINA/JAPAN
-   ============================================================ */
-.intl-section{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:32px}}
-.intl-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}}
-
-/* ============================================================
-   HEATMAP
-   ============================================================ */
-.hm-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:36px}}
-.hm-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;transition:border-color .25s,box-shadow .25s;cursor:default;position:relative;overflow:hidden}}
-.hm-card:hover{{border-color:var(--sig,var(--border-hover));box-shadow:0 0 24px rgba(59,130,246,.03)}}
-.hm-card::before{{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--sig,var(--border));border-radius:2px 0 0 2px}}
-.hm-top{{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}}
-.hm-sector{{font-size:.82rem;font-weight:600}}
+/* Heatmap */
+.hm-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:28px}}
+.hm-card{{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);transition:all .25s;cursor:default;position:relative;overflow:hidden}}
+.hm-card:hover{{box-shadow:var(--shadow-md);border-color:var(--border-hover)}}
+.hm-card::before{{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--sig,var(--border))}}
+.hm-top{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}}
+.hm-sector{{font-size:.8rem;font-weight:600;color:var(--text)}}
 .hm-signal{{display:flex;align-items:center}}
-.hm-action{{font-size:1.2rem;font-weight:800;margin:4px 0;letter-spacing:-.02em}}
+.hm-action{{font-size:1.1rem;font-weight:800;margin:4px 0;letter-spacing:-.02em}}
 .hm-metrics{{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-secondary);margin:8px 0 12px}}
 .hm-bar{{height:3px;background:var(--border);border-radius:2px;overflow:hidden}}
 .hm-fill{{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}}
-.hm-score{{font-size:.65rem;color:var(--text-muted);margin-top:8px;text-align:right}}
+.hm-score{{font-size:.62rem;color:var(--text-muted);margin-top:8px;text-align:right}}
 
-/* ============================================================
-   DEEP DIVE CARDS
-   ============================================================ */
-.deep-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(560px,1fr));gap:var(--gap);margin-bottom:36px}}
+/* Deep dive */
+.deep-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(560px,1fr));gap:16px;margin-bottom:28px}}
 @media(max-width:600px){{.deep-grid{{grid-template-columns:1fr}}}}
-.deep-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:border-color .25s}}
-.deep-card:hover{{border-color:var(--border-hover)}}
-.deep-head{{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px}}
+.deep-card{{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);transition:all .25s}}
+.deep-card:hover{{box-shadow:var(--shadow-md)}}
+.deep-head{{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:16px}}
 .deep-title-wrap{{display:flex;align-items:flex-start;gap:12px}}
 .deep-dot{{width:10px;height:10px;border-radius:3px;margin-top:6px;flex-shrink:0}}
-.deep-title{{font-size:1.05rem;font-weight:600;color:var(--text-primary);letter-spacing:-.01em}}
+.deep-title{{font-size:1rem;font-weight:600;color:var(--text);letter-spacing:-.01em}}
 .deep-desc{{font-size:.72rem;color:var(--text-muted);margin-top:3px;max-width:320px;line-height:1.5}}
-.deep-badge{{padding:10px 16px;border-radius:var(--radius-sm);text-align:center;background:var(--bg-elevated);border:1.5px solid var(--sig);min-width:110px}}
-.badge-action{{display:block;font-size:.9rem;font-weight:700;color:var(--sig)}}
+.deep-badge{{padding:10px 16px;border-radius:var(--radius-sm);text-align:center;background:var(--bg-page);border:1.5px solid var(--sig)}}
+.badge-action{{display:block;font-size:.88rem;font-weight:700;color:var(--sig)}}
 .badge-label{{display:block;font-size:.6rem;color:var(--text-muted);margin-top:2px}}
-
-/* KPI Row */
-.kpi-row{{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}}
+.kpi-row{{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:18px}}
 @media(max-width:600px){{.kpi-row{{grid-template-columns:repeat(3,1fr)}}}}
-.kpi{{background:var(--bg-base);border:1px solid var(--border);border-radius:var(--radius-xs);padding:10px;text-align:center;transition:border-color .25s}}
-.kpi:hover{{border-color:var(--border-hover)}}
-.kpi-main{{border-color:rgba(59,130,246,.15)}}
-.kpi-label{{display:block;font-size:.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}}
+.kpi{{background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center}}
+.kpi-main{{border-color:var(--accent);background:var(--accent-light)}}
+.kpi-label{{display:block;font-size:.56rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}}
 .kpi-val{{display:block;font-size:.95rem;font-weight:700;margin-top:3px}}
-
-/* Tables */
 .deep-tables{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
 @media(max-width:600px){{.deep-tables{{grid-template-columns:1fr}}}}
 .dtable{{overflow-x:auto}}
 .dtable-title{{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}}
 .dtable-title svg{{color:var(--accent);opacity:.6}}
 .dtable table{{width:100%;border-collapse:collapse;font-size:.76rem}}
-.dtable th{{text-align:left;font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;padding:7px 8px;border-bottom:1px solid var(--border)}}
-.dtable td{{padding:7px 8px;border-bottom:1px solid rgba(23,32,51,.6);color:var(--text-secondary)}}
-.td-name{{font-weight:500;color:var(--text-primary)}}
-.td-muted{{color:var(--text-muted)}}
-.dtable tbody tr{{transition:background .2s}}
+.dtable th{{text-align:left;font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;padding:6px 8px;border-bottom:1px solid var(--border)}}
+.dtable td{{padding:7px 8px;border-bottom:1px solid #f1f5f9;color:var(--text-secondary)}}
+.dtable tbody tr{{transition:background .15s}}
 .dtable tbody tr:hover{{background:var(--bg-hover)}}
+.td-muted{{color:var(--text-muted)}}
 
-/* ============================================================
-   DISCLAIMER & FOOTER
-   ============================================================ */
-.disclaimer{{background:var(--bg-card);border:1px solid rgba(146,64,14,.12);border-radius:var(--radius-sm);padding:20px 24px;margin-top:36px;display:flex;align-items:flex-start;gap:12px}}
+/* Footer */
+.disclaimer{{background:var(--bg);border:1px solid #fde68a;border-radius:var(--radius-sm);padding:16px 20px;margin-top:28px;display:flex;align-items:flex-start;gap:10px;box-shadow:var(--shadow)}}
 .disclaimer svg{{flex-shrink:0;color:var(--amber);margin-top:2px}}
 .disclaimer p{{font-size:.75rem;color:var(--text-secondary);line-height:1.7}}
 .disclaimer strong{{color:var(--amber)}}
-.footer{{text-align:center;color:var(--text-muted);font-size:.65rem;margin-top:20px;padding-bottom:24px;letter-spacing:.02em;opacity:.6}}
+.footer{{text-align:center;color:var(--text-muted);font-size:.62rem;margin-top:20px;padding-bottom:32px}}
 
-/* ============================================================
-   SCROLLBAR
-   ============================================================ */
+/* Scrollbar */
 ::-webkit-scrollbar{{width:5px;height:5px}}
 ::-webkit-scrollbar-track{{background:transparent}}
-::-webkit-scrollbar-thumb{{background:var(--border);border-radius:3px}}
-::-webkit-scrollbar-thumb:hover{{background:#2a3a52}}
+::-webkit-scrollbar-thumb{{background:#cbd5e1;border-radius:3px}}
+::-webkit-scrollbar-thumb:hover{{background:#94a3b8}}
 
-/* ============================================================
-   ANIMATIONS
-   ============================================================ */
-.reveal{{opacity:0;transform:translateY(12px);animation:reveal .5s cubic-bezier(.4,0,.2,1) forwards}}
+/* Animations */
+.reveal{{opacity:0;transform:translateY(10px);animation:reveal .45s cubic-bezier(.4,0,.2,1) forwards}}
 @keyframes reveal{{to{{opacity:1;transform:translateY(0)}}}}
-.reveal-d1{{animation-delay:.05s}} .reveal-d2{{animation-delay:.1s}} .reveal-d3{{animation-delay:.15s}} .reveal-d4{{animation-delay:.2s}} .reveal-d5{{animation-delay:.25s}} .reveal-d6{{animation-delay:.3s}}
+.reveal-d1{{animation-delay:.05s}}.reveal-d2{{animation-delay:.1s}}.reveal-d3{{animation-delay:.15s}}.reveal-d4{{animation-delay:.2s}}.reveal-d5{{animation-delay:.25s}}
 </style></head><body>
 
 <div class="app">
 
-<!-- ===== HEADER ===== -->
-<div class="header reveal">
-    <div class="header-left">
-        <div class="logo-mark">{svg_activity}</div>
-        <div>
-            <h1>Market Prediction</h1>
-            <span class="header-sub">{report_date} &middot; {report_time}</span>
-        </div>
+<!-- TOP BAR -->
+<div class="topbar reveal">
+    <div class="topbar-left">
+        <span class="topbar-ticker" data-name="NIFTY 50" data-type="broad">NIFTY 50: <strong>{broad_data.get('NIFTY 50',{{}}).get('close',0):,.2f}</strong> <span style="color:{val_color(broad_data.get('NIFTY 50',{{}}).get('change_pct',0))}">{broad_data.get('NIFTY 50',{{}}).get('change_pct',0):+.2f}%</span></span>
+        <span class="topbar-ticker" data-name="BANKNIFTY" data-type="broad">BANKNIFTY: <strong>{broad_data.get('BANKNIFTY',{{}}).get('close',0):,.2f}</strong> <span style="color:{val_color(broad_data.get('BANKNIFTY',{{}}).get('change_pct',0))}">{broad_data.get('BANKNIFTY',{{}}).get('change_pct',0):+.2f}%</span></span>
+        <span class="topbar-ticker">India VIX: <strong style="color:{vix_color}">{vix_val:.2f}</strong></span>
     </div>
-    <div class="header-right">
+    <div class="topbar-right">
+        <span id="connStatus" style="font-size:.72rem;color:var(--text-muted)">Connecting...</span>
+        <span style="color:var(--border)">&middot;</span>
+        <span style="font-size:.72rem;color:var(--text-muted)"><span id="lastUpdate">{report_time}</span></span>
+    </div>
+</div>
+
+<!-- HEADER -->
+<div class="header reveal">
+    <div style="display:flex;align-items:center;gap:14px">
+        <h1>The Market</h1>
         <span class="tag tag-ml">{svg_cpu} LSTM + XGBoost</span>
         <span class="tag tag-live"><span class="live-dot"></span> Live</span>
     </div>
-</div>
-
-<!-- ===== TOOLBAR ===== -->
-<div class="toolbar reveal reveal-d1">
-    <div class="toolbar-left">
-        <span id="connStatus" style="font-size:.72rem">Connecting...</span>
-        <span style="color:var(--border)">&middot;</span>
-        Updated <span class="gen-time" id="lastUpdate">{report_time}</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div class="header-right">
         <label class="auto-label"><input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()"> Auto</label>
-        <button class="btn btn-ghost" onclick="fetchPrices()" title="Quick price refresh">{svg_refresh} Prices</button>
-        <button class="btn btn-primary" id="refreshAll" onclick="refreshAll()">{svg_refresh} Refresh</button>
+        <button class="btn" onclick="fetchPrices()">{svg_refresh} Prices</button>
+        <button class="btn btn-primary" id="refreshAll" onclick="refreshAll()">{svg_refresh} Full Refresh</button>
     </div>
 </div>
 
-<!-- ===== MARKET MOOD ===== -->
-<div class="mood-section reveal reveal-d2">
-    <div class="mood-card main">
-        <div class="mood-label">Market Outlook</div>
-        <div class="mood-value">{mood}</div>
-        <div class="mood-meta">Composite {avg_composite:+.2f}</div>
-    </div>
-    <div class="mood-card">
-        <div class="mood-label">Sector Breakdown</div>
-        <div class="mood-breakdown">
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--green)">{bullish}</div><div class="mood-stat-label">Bullish</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--amber)">{neutral}</div><div class="mood-stat-label">Neutral</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--red)">{bearish}</div><div class="mood-stat-label">Bearish</div></div>
-        </div>
-    </div>
-    <div class="mood-card">
-        <div class="mood-label">ML Model Performance</div>
-        <div class="mood-breakdown">
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--accent)">{avg_acc:.0f}%</div><div class="mood-stat-label">Avg Accuracy</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--green)">{max_acc:.0f}%</div><div class="mood-stat-label">Best Model</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--text-secondary)">{len(all_accs)}</div><div class="mood-stat-label">Models</div></div>
-        </div>
-    </div>
-</div>
+<div class="body">
 
-<!-- ===== VIX STRIP ===== -->
-<div class="vix-strip reveal reveal-d3">
-    <div class="vix-card">
-        <div class="vix-icon" style="background:{vix_color}10">{svg_shield}</div>
-        <div class="vix-info">
-            <div class="vix-label">India VIX</div>
-            <div class="vix-val" style="color:{vix_color}">{vix_val:.2f} <span style="font-size:.72rem;font-weight:400;color:var(--text-muted)">({vix_chg:+.1f}%)</span></div>
-        </div>
+<!-- WORLD MAP -->
+<div class="map-section reveal reveal-d1">
+    <h2>Global Markets &mdash; {report_date}</h2>
+    <div class="map-container">
+        <svg class="map-svg" viewBox="0 0 1200 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <path d="M80,80 L120,60 L180,55 L220,70 L280,65 L300,80 L280,120 L300,150 L280,180 L260,200 L240,230 L220,250 L200,280 L180,300 L170,280 L160,250 L140,230 L120,210 L100,190 L80,160 L70,130 L75,100Z" fill="#c4ede3" stroke="#a0ddd0" stroke-width="1"/>
+            <path d="M220,300 L250,310 L280,350 L290,390 L280,430 L260,450 L240,440 L220,420 L200,390 L190,360 L200,330Z" fill="#c4ede3" stroke="#a0ddd0" stroke-width="1"/>
+            <path d="M480,70 L520,60 L560,70 L600,65 L620,80 L610,100 L620,120 L600,140 L580,130 L560,140 L540,130 L520,140 L500,130 L490,110 L480,90Z" fill="#c4ede3" stroke="#a0ddd0" stroke-width="1"/>
+            <path d="M500,180 L540,170 L580,180 L600,210 L610,250 L600,300 L580,340 L560,360 L540,350 L520,320 L500,280 L490,240 L495,210Z" fill="#c4ede3" stroke="#a0ddd0" stroke-width="1"/>
+            <path d="M620,60 L680,50 L740,55 L800,60 L860,70 L920,80 L960,100 L940,140 L920,180 L880,200 L840,210 L800,220 L760,230 L720,220 L680,200 L660,170 L640,140 L630,110 L625,80Z" fill="#c4ede3" stroke="#a0ddd0" stroke-width="1"/>
+            <path d="M740,220 L760,210 L780,230 L790,260 L780,290 L770,310 L760,300 L750,270 L740,250Z" fill="#b0e0d0" stroke="#80ccb0" stroke-width="1.5"/>
+            <path d="M960,120 L970,140 L965,170 L955,190 L950,170 L955,145Z" fill="#c4ede3" stroke="#a0ddd0" stroke-width="1"/>
+            <path d="M880,350 L920,340 L960,350 L990,370 L1000,400 L990,430 L960,440 L920,430 L890,410 L880,380Z" fill="#c4ede3" stroke="#a0ddd0" stroke-width="1"/>
+        </svg>
+        {map_pins_html}
     </div>
-    <div class="vix-card">
-        <div class="vix-icon" style="background:{vix_color}10">{svg_activity}</div>
-        <div class="vix-info">
-            <div class="vix-label">Fear Level</div>
-            <div class="vix-val" style="color:{vix_color}">{vix_status}</div>
-        </div>
-    </div>
-    <div class="vix-card">
-        <div class="vix-icon" style="background:rgba(59,130,246,.08)">{svg_shield}</div>
-        <div class="vix-info">
-            <div class="vix-label">US VIX</div>
-            <div class="vix-val">{us_vix_val:.2f} <span style="font-size:.72rem;font-weight:400;color:var(--text-muted)">({us_vix_chg:+.1f}%)</span></div>
-        </div>
+    <div class="map-legend">
+        <span><span class="map-legend-dot" style="background:var(--green)"></span> Positive</span>
+        <span><span class="map-legend-dot" style="background:var(--red)"></span> Negative</span>
     </div>
 </div>
 
-<!-- ===== BROAD MARKET ===== -->
-<div class="broad-row reveal reveal-d3">{broad_cards}</div>
-
-<!-- ===== GLOBAL MARKETS ===== -->
-<div class="sec-head"><h2>{svg_globe} Global Markets</h2><button class="btn btn-ghost" onclick="refreshSection('global')">{svg_refresh}</button></div>
-<div id="global-section" class="reveal reveal-d4">
-    <div class="sub-label">United States</div><div class="mkt-grid">{us_html}</div>
-    <div class="sub-label">Europe</div><div class="mkt-grid">{eu_html}</div>
-    <div class="sub-label">Asia Pacific</div><div class="mkt-grid">{asia_html}</div>
-    <div class="sub-label">Commodities &amp; Forex</div><div class="mkt-grid">{comm_html}</div>
+<!-- SUMMARY -->
+<div class="summary-row reveal reveal-d2">
+    <div class="summary-card">
+        <div class="summary-label">Market Outlook</div>
+        <div class="summary-value" style="color:{mood_color}">{mood}</div>
+        <div class="summary-meta">Composite Score {avg_composite:+.2f}</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-label">Sectors</div>
+        <div class="summary-breakdown">
+            <div><div class="summary-stat-val" style="color:var(--green)">{bullish}</div><div class="summary-stat-label">Bullish</div></div>
+            <div><div class="summary-stat-val" style="color:var(--amber)">{neutral}</div><div class="summary-stat-label">Neutral</div></div>
+            <div><div class="summary-stat-val" style="color:var(--red)">{bearish}</div><div class="summary-stat-label">Bearish</div></div>
+        </div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-label">India VIX</div>
+        <div class="summary-value" style="color:{vix_color}">{vix_val:.2f}</div>
+        <div class="summary-meta" style="color:{vix_color}">{vix_status} ({vix_chg:+.1f}%)</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-label">ML Accuracy</div>
+        <div class="summary-value" style="color:var(--accent)">{avg_acc:.0f}%</div>
+        <div class="summary-meta">Best: {max_acc:.0f}% &middot; {len(all_accs)} models</div>
+    </div>
 </div>
 
-<!-- ===== CHINA & JAPAN ===== -->
-<div class="sec-head"><h2>{svg_globe} Japan &amp; China</h2><button class="btn btn-ghost" onclick="refreshSection('chinajapan')">{svg_refresh}</button></div>
-<div class="intl-section reveal reveal-d4">
-    <div class="sub-label">Japan (TSE)</div><div class="intl-grid">{japan_html}</div>
-    <div class="sub-label" style="margin-top:18px">China &amp; Hong Kong (HKEX)</div><div class="intl-grid">{china_html}</div>
+<!-- BROAD MARKET -->
+<div class="broad-row reveal reveal-d2">{broad_cards}</div>
+
+<!-- MARKET TABLES -->
+<div class="tables-grid reveal reveal-d3">
+    <div class="table-card"><h3>{svg_globe} US Markets</h3><table><thead><tr><th>Index</th><th>+/-%</th><th>Last</th></tr></thead><tbody>{us_rows}</tbody></table></div>
+    <div class="table-card"><h3>{svg_globe} Europe</h3><table><thead><tr><th>Index</th><th>+/-%</th><th>Last</th></tr></thead><tbody>{eu_rows}</tbody></table></div>
+    <div class="table-card"><h3>{svg_globe} Asia Pacific</h3><table><thead><tr><th>Index</th><th>+/-%</th><th>Last</th></tr></thead><tbody>{asia_rows}</tbody></table></div>
+    <div class="table-card"><h3>{svg_globe} Commodities &amp; Forex</h3><table><thead><tr><th>Item</th><th>+/-%</th><th>Last</th></tr></thead><tbody>{comm_rows}</tbody></table></div>
+    <div class="table-card"><h3>{svg_globe} Japan</h3><table><thead><tr><th>Stock</th><th>+/-%</th><th>Last</th></tr></thead><tbody>{japan_rows}</tbody></table></div>
+    <div class="table-card"><h3>{svg_globe} China &amp; Hong Kong</h3><table><thead><tr><th>Stock</th><th>+/-%</th><th>Last</th></tr></thead><tbody>{china_rows}</tbody></table></div>
 </div>
 
-<!-- ===== SECTOR HEATMAP ===== -->
-<div class="sec-head"><h2>{svg_bar_chart} Sector Predictions</h2><button class="btn btn-ghost" onclick="refreshSection('sectors')">{svg_refresh}</button></div>
-<div class="hm-grid reveal reveal-d5">{heatmap_html}</div>
+<!-- SECTOR HEATMAP -->
+<div class="sec-head"><h2>{svg_bar_chart} Sector Predictions</h2></div>
+<div class="hm-grid reveal reveal-d4">{heatmap_html}</div>
 
-<!-- ===== SECTOR DEEP DIVE ===== -->
+<!-- SECTOR DEEP DIVE -->
 <div class="sec-head"><h2>{svg_cpu} Sector Deep Dive</h2></div>
-<div class="deep-grid reveal reveal-d6">{sector_cards_html}</div>
+<div class="deep-grid reveal reveal-d5">{sector_cards_html}</div>
 
-<!-- ===== DISCLAIMER ===== -->
+<!-- DISCLAIMER -->
 <div class="disclaimer reveal">
     {svg_alert}
-    <p><strong>Disclaimer:</strong> This is an ML-based analysis tool for educational purposes only. Models are trained on historical data and cannot predict black-swan events. Accuracy figures are from validation data. Do your own research and consult a SEBI-registered advisor.</p>
+    <p><strong>Disclaimer:</strong> ML-based analysis for educational purposes only. Models trained on historical data cannot predict black-swan events. Consult a SEBI-registered advisor.</p>
 </div>
-<div class="footer">v4 &middot; LSTM + XGBoost Ensemble &middot; TradingView Data &middot; TensorFlow + scikit-learn</div>
+<div class="footer">v5 &middot; LSTM + XGBoost Ensemble &middot; TradingView Data &middot; TensorFlow + scikit-learn</div>
 
-</div><!-- /app -->
+</div></div>
 
 <script>
-/* ===== REAL-TIME PRICE UPDATE ENGINE ===== */
-// Auto-detect: use localhost when local, relative URLs on Vercel
 const IS_LOCAL=location.hostname==='localhost'||location.hostname==='127.0.0.1';
 const SERVER=IS_LOCAL?'http://localhost:8080':'';
-let priceTimer=null;
-let autoTimer=null;
-let isLive=false;
+let priceTimer=null;let autoTimer=null;let isLive=false;
 const UP_SVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>';
 const DN_SVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>';
 
 function fmt(n){{return n.toLocaleString('en-IN',{{minimumFractionDigits:2,maximumFractionDigits:2}})}}
 function pctFmt(n){{return(n>=0?'+':'')+n.toFixed(2)+'%'}}
-function clr(n){{return n>=0?'#22c55e':'#ef4444'}}
+function clr(n){{return n>=0?'#0e7c6b':'#dc2646'}}
 function arrow(n){{return n>=0?UP_SVG:DN_SVG}}
 
 function flashCard(el){{
     el.style.transition='none';
-    el.style.boxShadow='0 0 16px rgba(59,130,246,.2)';
+    el.style.boxShadow='0 0 16px rgba(14,124,107,.15)';
     setTimeout(()=>{{el.style.transition='box-shadow .8s ease';el.style.boxShadow='none'}},50);
 }}
 
-function updateCard(el, close, chg){{
+function updateCard(el,close,chg){{
     const priceEl=el.querySelector('[data-field="price"]');
     const changeEl=el.querySelector('[data-field="change"]');
     if(priceEl){{
         const oldVal=priceEl.textContent.replace(/,/g,'');
         const newVal=fmt(close);
-        if(oldVal!==newVal.replace(/,/g,'')){{
-            priceEl.textContent=newVal;
-            flashCard(el);
-        }}
+        if(oldVal!==newVal.replace(/,/g,'')){{priceEl.textContent=newVal;flashCard(el);}}
     }}
     if(changeEl){{
-        changeEl.innerHTML=arrow(chg)+' '+pctFmt(chg);
+        const tag=el.tagName.toLowerCase();
+        if(tag==='tr'){{changeEl.innerHTML=pctFmt(chg);}}
+        else{{changeEl.innerHTML=arrow(chg)+' '+pctFmt(chg);}}
         changeEl.style.color=clr(chg);
     }}
 }}
@@ -884,98 +827,37 @@ async function fetchPrices(){{
         const r=await fetch(SERVER+'/api/prices',{{signal:AbortSignal.timeout(60000)}});
         const data=await r.json();
         if(data.error)return;
-
-        // Update global market cards
-        if(data.global){{
-            document.querySelectorAll('[data-type="global"]').forEach(el=>{{
-                const name=el.dataset.name;
-                if(data.global[name])updateCard(el,data.global[name].close,data.global[name].change_pct);
-            }});
-        }}
-        // Update broad market cards
-        if(data.broad){{
-            document.querySelectorAll('[data-type="broad"]').forEach(el=>{{
-                const name=el.dataset.name;
-                if(data.broad[name])updateCard(el,data.broad[name].close,data.broad[name].change_pct);
-            }});
-        }}
-        // Update China/Japan cards
-        if(data.china_japan){{
-            document.querySelectorAll('[data-type="china_japan"]').forEach(el=>{{
-                const name=el.dataset.name;
-                if(data.china_japan[name])updateCard(el,data.china_japan[name].close,data.china_japan[name].change_pct);
-            }});
-        }}
-        // Update stock CMP in deep-dive tables
-        if(data.stocks){{
-            document.querySelectorAll('[data-stock]').forEach(el=>{{
-                const sname=el.dataset.stock;
-                if(data.stocks[sname]){{
-                    const td=el.querySelector('[data-field="stock-price"]');
-                    if(td){{
-                        const old=td.textContent.replace(/,/g,'');
-                        const nv=fmt(data.stocks[sname].close);
-                        if(old!==nv.replace(/,/g,'')){{
-                            td.textContent=nv;
-                            td.style.transition='none';
-                            td.style.color='#3b82f6';
-                            setTimeout(()=>{{td.style.transition='color .8s';td.style.color='#cbd5e1'}},50);
-                        }}
-                    }}
-                }}
-            }});
-        }}
-
-        // Update status
-        if(!isLive){{isLive=true;if(statusEl)statusEl.innerHTML='<span class="live-dot"></span> Connected';}}
+        if(data.global){{document.querySelectorAll('[data-type="global"]').forEach(el=>{{const name=el.dataset.name;if(data.global[name])updateCard(el,data.global[name].close,data.global[name].change_pct)}})}}
+        if(data.broad){{document.querySelectorAll('[data-type="broad"]').forEach(el=>{{const name=el.dataset.name;if(data.broad[name])updateCard(el,data.broad[name].close,data.broad[name].change_pct)}})}}
+        if(data.china_japan){{document.querySelectorAll('[data-type="china_japan"]').forEach(el=>{{const name=el.dataset.name;if(data.china_japan[name])updateCard(el,data.china_japan[name].close,data.china_japan[name].change_pct)}})}}
+        if(data.stocks){{document.querySelectorAll('[data-stock]').forEach(el=>{{const sname=el.dataset.stock;if(data.stocks[sname]){{const td=el.querySelector('[data-field="stock-price"]');if(td){{const old=td.textContent.replace(/,/g,'');const nv=fmt(data.stocks[sname].close);if(old!==nv.replace(/,/g,'')){{td.textContent=nv;td.style.transition='none';td.style.color='var(--accent)';setTimeout(()=>{{td.style.transition='color .8s';td.style.color='var(--text-secondary)'}},50)}}}}}}}})}}
+        if(!isLive){{isLive=true;if(statusEl)statusEl.innerHTML='<span class="live-dot"></span> Connected'}}
         if(timeEl)timeEl.textContent=new Date().toLocaleTimeString('en-US',{{hour:'2-digit',minute:'2-digit',second:'2-digit'}});
     }}catch(e){{
-        if(statusEl&&isLive){{statusEl.innerHTML='<span style="color:#f59e0b">Offline — prices static</span>';isLive=false;}}
+        if(statusEl&&isLive){{statusEl.innerHTML='<span style="color:var(--amber)">Offline</span>';isLive=false}}
     }}
 }}
 
 function refreshAll(){{
-    if(!IS_LOCAL){{fetchPrices();return;}}
+    if(!IS_LOCAL){{fetchPrices();return}}
     const btn=document.getElementById('refreshAll');
     btn.classList.add('loading');
-    fetch(SERVER+'/api/refresh',{{signal:AbortSignal.timeout(180000)}})
-        .then(r=>r.json()).then(()=>window.location.reload())
-        .catch(()=>{{fetchPrices();btn.classList.remove('loading')}});
+    fetch(SERVER+'/api/refresh',{{signal:AbortSignal.timeout(180000)}}).then(r=>r.json()).then(()=>window.location.reload()).catch(()=>{{fetchPrices();btn.classList.remove('loading')}});
 }}
-
-function refreshSection(s){{fetchPrices()}}
 
 function toggleAutoRefresh(){{
     const on=document.getElementById('autoRefresh').checked;
-    if(on){{
-        if(!priceTimer)priceTimer=setInterval(fetchPrices,30000);
-        autoTimer=setInterval(refreshAll,300000);
-    }}else{{
-        if(priceTimer){{clearInterval(priceTimer);priceTimer=null}}
-        if(autoTimer){{clearInterval(autoTimer);autoTimer=null}}
-    }}
+    if(on){{if(!priceTimer)priceTimer=setInterval(fetchPrices,30000);autoTimer=setInterval(refreshAll,300000)}}
+    else{{if(priceTimer){{clearInterval(priceTimer);priceTimer=null}}if(autoTimer){{clearInterval(autoTimer);autoTimer=null}}}}
 }}
 
-// Boot: try connecting to live server immediately
 document.getElementById('lastUpdate').textContent=new Date().toLocaleTimeString('en-US',{{hour:'2-digit',minute:'2-digit'}});
 fetch(SERVER+'/api/status',{{signal:AbortSignal.timeout(3000)}}).then(r=>r.json()).then(d=>{{
-    isLive=true;
-    const s=document.getElementById('connStatus');
-    if(s)s.innerHTML='<span class="live-dot"></span> Connected';
-    // Start auto-polling prices every 30s
-    fetchPrices();
-    priceTimer=setInterval(fetchPrices,30000);
+    isLive=true;const s=document.getElementById('connStatus');if(s)s.innerHTML='<span class="live-dot"></span> Connected';
+    fetchPrices();priceTimer=setInterval(fetchPrices,30000);
 }}).catch(()=>{{
-    if(!IS_LOCAL){{
-        // On Vercel: prices API is always available via serverless function
-        fetchPrices();
-        priceTimer=setInterval(fetchPrices,30000);
-        const s=document.getElementById('connStatus');
-        if(s)s.innerHTML='<span class="live-dot"></span> Vercel Live';
-    }}else{{
-        const s=document.getElementById('connStatus');
-        if(s)s.innerHTML='<span style="color:#64748b">Start live_server.py for real-time updates</span>';
-    }}
+    if(!IS_LOCAL){{fetchPrices();priceTimer=setInterval(fetchPrices,30000);const s=document.getElementById('connStatus');if(s)s.innerHTML='<span class="live-dot"></span> Vercel Live'}}
+    else{{const s=document.getElementById('connStatus');if(s)s.innerHTML='<span style="color:var(--text-muted)">Start live_server.py for real-time updates</span>'}}
 }});
 </script>
 </body></html>"""
