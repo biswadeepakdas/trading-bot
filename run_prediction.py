@@ -299,8 +299,8 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
     bearish = sum(1 for s in sectors_data.values() if s['composite_score'] < -0.2)
     neutral = len(sectors_data) - bullish - bearish
 
-    if avg_composite > 1: mood, mood_color = 'BULLISH', '#10b981'
-    elif avg_composite > 0: mood, mood_color = 'MILDLY BULLISH', '#34d399'
+    if avg_composite > 1: mood, mood_color = 'BULLISH', '#22c55e'
+    elif avg_composite > 0: mood, mood_color = 'MILDLY BULLISH', '#4ade80'
     elif avg_composite < -1: mood, mood_color = 'BEARISH', '#ef4444'
     elif avg_composite < 0: mood, mood_color = 'MILDLY BEARISH', '#f87171'
     else: mood, mood_color = 'NEUTRAL', '#f59e0b'
@@ -332,7 +332,7 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
         return svg_trending_up if change >= 0 else svg_trending_down
 
     def val_color(change):
-        return '#10b981' if change >= 0 else '#ef4444'
+        return '#22c55e' if change >= 0 else '#ef4444'
 
     # Build global market cards
     def global_cards(markets, section_id):
@@ -386,13 +386,13 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
     heatmap_html = ""
     for s in sorted_sectors:
         sc = s['composite_score']
-        ac = '#10b981' if 'BUY' in s['action'] else ('#ef4444' if 'SELL' in s['action'] else '#f59e0b')
+        ac = '#22c55e' if 'BUY' in s['action'] else ('#ef4444' if 'SELL' in s['action'] else '#f59e0b')
         bar_w = min(abs(sc) / 3 * 100, 100)
         mag = s['expected_magnitude']
         mag_str = f"{mag:+.2f}%" if mag != 0 else "N/A"
         signal_icon = svg_trending_up if 'BUY' in s['action'] else (svg_trending_down if 'SELL' in s['action'] else svg_activity)
         heatmap_html += f'''
-        <div class="hm-card" style="--accent:{ac}">
+        <div class="hm-card" style="--sig:{ac}">
             <div class="hm-top">
                 <span class="hm-sector" style="color:{s['color']}">{s['sector']}</span>
                 <span class="hm-signal" style="color:{ac}">{signal_icon}</span>
@@ -409,7 +409,7 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
     # Sector deep-dive cards
     sector_cards_html = ""
     for s in sorted_sectors:
-        ac = '#10b981' if 'BUY' in s['action'] else ('#ef4444' if 'SELL' in s['action'] else '#f59e0b')
+        ac = '#22c55e' if 'BUY' in s['action'] else ('#ef4444' if 'SELL' in s['action'] else '#f59e0b')
         mag = s['expected_magnitude']
 
         # Global drivers rows
@@ -453,7 +453,7 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
                         <p class="deep-desc">{s['description']}</p>
                     </div>
                 </div>
-                <div class="deep-badge" style="--accent:{ac}">
+                <div class="deep-badge" style="--sig:{ac}">
                     <span class="badge-action">{s['action']}</span>
                     <span class="badge-label">{s['prediction']}</span>
                 </div>
@@ -489,276 +489,354 @@ def generate_html_report(sectors_data, global_data, broad_data, china_japan_data
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Market Prediction Dashboard &mdash; {report_date}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 <style>
-/* ========== RESET & BASE ========== */
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root{{
+  /* Surfaces */
+  --bg-base:#020617;
+  --bg-card:#0a101e;
+  --bg-elevated:#101827;
+  --bg-hover:#141c2e;
+  /* Borders */
+  --border:#172033;
+  --border-hover:rgba(99,136,199,.18);
+  --border-accent:rgba(59,130,246,.22);
+  /* Text */
+  --text-primary:#f1f5f9;
+  --text-secondary:#94a3b8;
+  --text-muted:#4b5c78;
+  /* Accent */
+  --accent:#3b82f6;
+  --accent-glow:rgba(59,130,246,.08);
+  /* Semantic */
+  --green:#22c55e;
+  --red:#ef4444;
+  --amber:#f59e0b;
+  /* Spacing */
+  --gap:20px;
+  --radius:14px;
+  --radius-sm:10px;
+  --radius-xs:7px;
+}}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
 *,*::before,*::after{{margin:0;padding:0;box-sizing:border-box}}
-html{{font-size:16px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}}
-body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#050a14;color:#e2e8f0;min-height:100vh;line-height:1.5}}
+html{{font-size:16px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;scroll-behavior:smooth}}
+body{{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--bg-base);
+  color:var(--text-primary);
+  min-height:100vh;
+  line-height:1.6;
+  font-variant-numeric:tabular-nums;
+}}
+@media(prefers-reduced-motion:reduce){{*,*::before,*::after{{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}}}
 
-/* ========== LAYOUT ========== */
-.dashboard{{max-width:1480px;margin:0 auto;padding:20px 24px 40px}}
-@media(max-width:768px){{.dashboard{{padding:12px 12px 32px}}}}
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app{{max-width:1440px;margin:0 auto;padding:32px 40px 56px}}
+@media(max-width:768px){{.app{{padding:20px 16px 40px}}}}
 
-/* ========== HEADER ========== */
-.header{{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;background:linear-gradient(135deg,#0c1524 0%,#111b2e 100%);border:1px solid #1e293b;border-radius:16px;margin-bottom:20px;flex-wrap:wrap;gap:12px}}
-.header-left{{display:flex;align-items:center;gap:14px}}
-.logo-mark{{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#0d9488,#0369a1);display:flex;align-items:center;justify-content:center;flex-shrink:0}}
-.header h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;letter-spacing:-.02em}}
-.header-sub{{font-size:.78rem;color:#64748b;font-weight:400}}
-.header-right{{display:flex;align-items:center;gap:12px;flex-wrap:wrap}}
-.tag{{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;font-size:.7rem;font-weight:600;letter-spacing:.02em}}
-.tag-ml{{background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.25);color:#38bdf8}}
-.tag-live{{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#34d399}}
-.live-dot{{width:6px;height:6px;border-radius:50%;background:#10b981;animation:pulse 2s ease-in-out infinite}}
-@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.3}}}}
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header{{display:flex;align-items:center;justify-content:space-between;padding:28px 32px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:var(--gap);flex-wrap:wrap;gap:16px;position:relative;overflow:hidden}}
+.header::before{{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(59,130,246,.15),transparent)}}
+.header-left{{display:flex;align-items:center;gap:16px}}
+.logo-mark{{width:44px;height:44px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}}
+.header h1{{font-size:1.35rem;font-weight:700;color:var(--text-primary);letter-spacing:-.03em;line-height:1.2}}
+.header-sub{{font-size:.8rem;color:var(--text-muted);font-weight:400;margin-top:2px}}
+.header-right{{display:flex;align-items:center;gap:10px;flex-wrap:wrap}}
+.tag{{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--radius-xs);font-size:.72rem;font-weight:500;letter-spacing:.01em}}
+.tag-ml{{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);color:var(--accent)}}
+.tag-live{{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);color:var(--green)}}
+.live-dot{{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2.5s ease-in-out infinite}}
+@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.25}}}}
 
-/* ========== TOOLBAR ========== */
-.toolbar{{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#0c1524;border:1px solid #1e293b;border-radius:12px;margin-bottom:20px;flex-wrap:wrap;gap:8px}}
-.toolbar-left{{display:flex;align-items:center;gap:10px;font-size:.78rem;color:#94a3b8}}
-.toolbar-left .gen-time{{color:#cbd5e1;font-weight:500}}
-.btn{{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;font-size:.78rem;font-weight:600;border:none;cursor:pointer;transition:all .2s ease;font-family:inherit}}
-.btn-primary{{background:linear-gradient(135deg,#0d9488,#0369a1);color:#fff}}
-.btn-primary:hover{{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 4px 16px rgba(13,148,136,.25)}}
-.btn-primary:active{{transform:translateY(0)}}
-.btn-primary.loading{{opacity:.65;pointer-events:none}}
-.btn-primary.loading .spin-icon{{animation:spin .8s linear infinite}}
-@keyframes spin{{to{{transform:rotate(360deg)}}}}
-.btn-ghost{{background:transparent;border:1px solid #334155;color:#94a3b8}}
-.btn-ghost:hover{{border-color:#475569;color:#cbd5e1}}
-.auto-label{{display:flex;align-items:center;gap:5px;font-size:.72rem;color:#64748b;cursor:pointer}}
-.auto-label input{{accent-color:#0d9488;cursor:pointer}}
+/* ============================================================
+   TOOLBAR
+   ============================================================ */
+.toolbar{{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:28px;flex-wrap:wrap;gap:10px}}
+.toolbar-left{{display:flex;align-items:center;gap:12px;font-size:.78rem;color:var(--text-secondary)}}
+.toolbar-left .gen-time{{color:var(--text-primary);font-weight:500}}
+.btn{{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--radius-xs);font-size:.78rem;font-weight:600;border:none;cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);font-family:inherit}}
+.btn:focus-visible{{outline:2px solid var(--accent);outline-offset:2px}}
+.btn-primary{{background:var(--accent);color:#fff}}
+.btn-primary:hover{{filter:brightness(1.12);box-shadow:0 4px 20px rgba(59,130,246,.2)}}
+.btn-primary:active{{transform:scale(.98)}}
+.btn-primary.loading{{opacity:.6;pointer-events:none}}
+.btn-ghost{{background:transparent;border:1px solid var(--border);color:var(--text-secondary)}}
+.btn-ghost:hover{{border-color:rgba(59,130,246,.2);color:var(--text-primary);background:var(--accent-glow)}}
+.auto-label{{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text-muted);cursor:pointer}}
+.auto-label input{{accent-color:var(--accent);cursor:pointer}}
 
-/* ========== MOOD GAUGE ========== */
-.mood-section{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}}
+/* ============================================================
+   MOOD SECTION
+   ============================================================ */
+.mood-section{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap);margin-bottom:28px}}
 @media(max-width:900px){{.mood-section{{grid-template-columns:1fr}}}}
-.mood-card{{background:#0c1524;border:1px solid #1e293b;border-radius:14px;padding:24px;text-align:center}}
-.mood-card.main{{border-color:{mood_color}22;background:linear-gradient(180deg,rgba({",".join(str(int(mood_color[i:i+2],16)) for i in (1,3,5))},.06) 0%,#0c1524 100%)}}
-.mood-label{{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-bottom:6px}}
-.mood-value{{font-size:2rem;font-weight:800;color:{mood_color};letter-spacing:-.02em}}
-.mood-meta{{font-size:.78rem;color:#94a3b8;margin-top:4px}}
-.mood-breakdown{{display:flex;justify-content:center;gap:20px;margin-top:10px}}
+.mood-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;transition:border-color .25s}}
+.mood-card:hover{{border-color:var(--border-hover)}}
+.mood-card.main{{border-color:{mood_color}18;position:relative;overflow:hidden}}
+.mood-card.main::after{{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba({",".join(str(int(mood_color[i:i+2],16)) for i in (1,3,5))},.04),transparent 70%);pointer-events:none}}
+.mood-label{{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.14em;font-weight:600;margin-bottom:8px}}
+.mood-value{{font-size:2.2rem;font-weight:800;color:{mood_color};letter-spacing:-.03em;line-height:1.1}}
+.mood-meta{{font-size:.8rem;color:var(--text-secondary);margin-top:8px}}
+.mood-breakdown{{display:flex;justify-content:center;gap:32px;margin-top:14px}}
 .mood-stat{{text-align:center}}
-.mood-stat-val{{font-size:1.5rem;font-weight:700}}
-.mood-stat-label{{font-size:.65rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em}}
+.mood-stat-val{{font-size:1.6rem;font-weight:700;line-height:1.2}}
+.mood-stat-label{{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}}
 
-/* ========== VIX STRIP ========== */
-.vix-strip{{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}}
-.vix-card{{flex:1;min-width:140px;background:#0c1524;border:1px solid #1e293b;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px}}
-.vix-icon{{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}}
-.vix-info .vix-label{{font-size:.65rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-weight:600}}
-.vix-info .vix-val{{font-size:1.1rem;font-weight:700}}
+/* ============================================================
+   VIX STRIP
+   ============================================================ */
+.vix-strip{{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap);margin-bottom:28px}}
+@media(max-width:768px){{.vix-strip{{grid-template-columns:1fr}}}}
+.vix-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;display:flex;align-items:center;gap:16px;transition:border-color .25s}}
+.vix-card:hover{{border-color:var(--border-hover)}}
+.vix-icon{{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}}
+.vix-info .vix-label{{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}}
+.vix-info .vix-val{{font-size:1.15rem;font-weight:700;margin-top:2px}}
 
-/* ========== BROAD MARKET ========== */
-.broad-row{{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}}
-.broad-card{{flex:1;min-width:200px;background:linear-gradient(135deg,#0c1524,#111b2e);border:1px solid #1e293b;border-radius:14px;padding:20px;text-align:center}}
-.broad-label{{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.1em;font-weight:600}}
-.broad-price{{font-size:1.6rem;font-weight:700;margin:4px 0;color:#f1f5f9}}
+/* ============================================================
+   BROAD MARKET
+   ============================================================ */
+.broad-row{{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--gap);margin-bottom:32px}}
+.broad-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;transition:border-color .25s,box-shadow .25s}}
+.broad-card:hover{{border-color:var(--border-accent);box-shadow:0 0 32px rgba(59,130,246,.04)}}
+.broad-label{{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.12em;font-weight:600}}
+.broad-price{{font-size:1.75rem;font-weight:700;margin:6px 0;color:var(--text-primary);line-height:1.2}}
 .broad-chg{{display:inline-flex;align-items:center;gap:4px;font-size:.88rem;font-weight:600}}
 
-/* ========== SECTION HEADERS ========== */
-.sec-head{{display:flex;align-items:center;justify-content:space-between;margin:28px 0 14px;padding-bottom:10px;border-bottom:1px solid #1e293b}}
-.sec-head h2{{font-size:1.05rem;font-weight:600;color:#e2e8f0;display:flex;align-items:center;gap:8px}}
-.sec-head h2 svg{{color:#0d9488}}
+/* ============================================================
+   SECTION HEADERS
+   ============================================================ */
+.sec-head{{display:flex;align-items:center;justify-content:space-between;margin:36px 0 18px;padding-bottom:12px;border-bottom:1px solid var(--border)}}
+.sec-head h2{{font-size:1rem;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:10px;letter-spacing:-.01em}}
+.sec-head h2 svg{{color:var(--accent);opacity:.7}}
 
-/* ========== MARKET CARDS GRID ========== */
-.mkt-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;margin-bottom:16px}}
-.mkt-card{{background:#0c1524;border:1px solid #1e293b;border-radius:10px;padding:12px;text-align:center;transition:border-color .2s ease,transform .2s ease;cursor:default}}
-.mkt-card:hover{{border-color:#334155;transform:translateY(-2px)}}
-.mkt-name{{font-size:.65rem;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.mkt-sym{{font-size:.5rem;color:#475569;margin-left:3px;text-transform:none;letter-spacing:0;font-weight:400}}
-.mkt-price{{font-size:.92rem;font-weight:600;color:#e2e8f0;margin:2px 0}}
+/* ============================================================
+   MARKET CARDS GRID
+   ============================================================ */
+.mkt-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}}
+.mkt-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center;transition:border-color .25s,box-shadow .25s;cursor:default}}
+.mkt-card:hover{{border-color:var(--border-hover);box-shadow:0 0 24px rgba(59,130,246,.03)}}
+.mkt-name{{font-size:.67rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.mkt-sym{{font-size:.52rem;color:var(--text-muted);margin-left:3px;text-transform:none;letter-spacing:0;font-weight:400;opacity:.6}}
+.mkt-price{{font-size:.95rem;font-weight:600;color:var(--text-primary);margin:3px 0}}
 .mkt-change{{display:inline-flex;align-items:center;gap:3px;font-size:.76rem;font-weight:600}}
 
-.sub-label{{font-size:.72rem;color:#475569;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin:14px 0 8px;display:flex;align-items:center;gap:6px}}
-.sub-label::after{{content:'';flex:1;height:1px;background:#1e293b}}
+.sub-label{{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin:18px 0 10px;display:flex;align-items:center;gap:8px}}
+.sub-label::after{{content:'';flex:1;height:1px;background:var(--border)}}
 
-/* ========== CHINA/JAPAN ========== */
-.intl-section{{background:#0c1524;border:1px solid #1e293b;border-radius:14px;padding:20px;margin-bottom:24px}}
-.intl-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}}
+/* ============================================================
+   CHINA/JAPAN
+   ============================================================ */
+.intl-section{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:32px}}
+.intl-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}}
 
-/* ========== HEATMAP ========== */
-.hm-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:28px}}
-.hm-card{{background:#0c1524;border:1px solid #1e293b;border-radius:12px;padding:16px;transition:border-color .2s,transform .2s;cursor:default}}
-.hm-card:hover{{border-color:var(--accent,#334155);transform:translateY(-2px)}}
-.hm-top{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}}
-.hm-sector{{font-size:.85rem;font-weight:600}}
+/* ============================================================
+   HEATMAP
+   ============================================================ */
+.hm-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:36px}}
+.hm-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;transition:border-color .25s,box-shadow .25s;cursor:default;position:relative;overflow:hidden}}
+.hm-card:hover{{border-color:var(--sig,var(--border-hover));box-shadow:0 0 24px rgba(59,130,246,.03)}}
+.hm-card::before{{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--sig,var(--border));border-radius:2px 0 0 2px}}
+.hm-top{{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}}
+.hm-sector{{font-size:.82rem;font-weight:600}}
 .hm-signal{{display:flex;align-items:center}}
-.hm-action{{font-size:1.15rem;font-weight:800;margin:2px 0}}
-.hm-metrics{{display:flex;justify-content:space-between;font-size:.72rem;color:#94a3b8;margin:6px 0 8px}}
-.hm-bar{{height:3px;background:#1e293b;border-radius:2px;overflow:hidden}}
-.hm-fill{{height:100%;border-radius:2px;transition:width .6s ease}}
-.hm-score{{font-size:.65rem;color:#475569;margin-top:6px;text-align:right}}
+.hm-action{{font-size:1.2rem;font-weight:800;margin:4px 0;letter-spacing:-.02em}}
+.hm-metrics{{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-secondary);margin:8px 0 12px}}
+.hm-bar{{height:3px;background:var(--border);border-radius:2px;overflow:hidden}}
+.hm-fill{{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}}
+.hm-score{{font-size:.65rem;color:var(--text-muted);margin-top:8px;text-align:right}}
 
-/* ========== DEEP DIVE CARDS ========== */
-.deep-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(540px,1fr));gap:20px;margin-bottom:28px}}
+/* ============================================================
+   DEEP DIVE CARDS
+   ============================================================ */
+.deep-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(560px,1fr));gap:var(--gap);margin-bottom:36px}}
 @media(max-width:600px){{.deep-grid{{grid-template-columns:1fr}}}}
-.deep-card{{background:#0c1524;border:1px solid #1e293b;border-radius:14px;padding:22px;transition:border-color .2s}}
-.deep-card:hover{{border-color:#334155}}
-.deep-head{{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px}}
-.deep-title-wrap{{display:flex;align-items:flex-start;gap:10px}}
-.deep-dot{{width:10px;height:10px;border-radius:3px;margin-top:5px;flex-shrink:0}}
-.deep-title{{font-size:1.05rem;font-weight:600;color:#f1f5f9}}
-.deep-desc{{font-size:.7rem;color:#64748b;margin-top:2px;max-width:320px}}
-.deep-badge{{padding:8px 14px;border-radius:10px;text-align:center;background:rgba(0,0,0,.3);border:1.5px solid var(--accent);min-width:105px}}
-.badge-action{{display:block;font-size:.88rem;font-weight:700;color:var(--accent)}}
-.badge-label{{display:block;font-size:.6rem;color:#94a3b8;margin-top:1px}}
+.deep-card{{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:border-color .25s}}
+.deep-card:hover{{border-color:var(--border-hover)}}
+.deep-head{{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px}}
+.deep-title-wrap{{display:flex;align-items:flex-start;gap:12px}}
+.deep-dot{{width:10px;height:10px;border-radius:3px;margin-top:6px;flex-shrink:0}}
+.deep-title{{font-size:1.05rem;font-weight:600;color:var(--text-primary);letter-spacing:-.01em}}
+.deep-desc{{font-size:.72rem;color:var(--text-muted);margin-top:3px;max-width:320px;line-height:1.5}}
+.deep-badge{{padding:10px 16px;border-radius:var(--radius-sm);text-align:center;background:var(--bg-elevated);border:1.5px solid var(--sig);min-width:110px}}
+.badge-action{{display:block;font-size:.9rem;font-weight:700;color:var(--sig)}}
+.badge-label{{display:block;font-size:.6rem;color:var(--text-muted);margin-top:2px}}
 
 /* KPI Row */
-.kpi-row{{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}}
+.kpi-row{{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}}
 @media(max-width:600px){{.kpi-row{{grid-template-columns:repeat(3,1fr)}}}}
-.kpi{{background:#080e1a;border:1px solid #1a2332;border-radius:8px;padding:8px;text-align:center}}
-.kpi-main{{border-color:#334155}}
-.kpi-label{{display:block;font-size:.58rem;color:#475569;text-transform:uppercase;letter-spacing:.08em;font-weight:600}}
-.kpi-val{{display:block;font-size:.95rem;font-weight:700;margin-top:2px}}
+.kpi{{background:var(--bg-base);border:1px solid var(--border);border-radius:var(--radius-xs);padding:10px;text-align:center;transition:border-color .25s}}
+.kpi:hover{{border-color:var(--border-hover)}}
+.kpi-main{{border-color:rgba(59,130,246,.15)}}
+.kpi-label{{display:block;font-size:.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}}
+.kpi-val{{display:block;font-size:.95rem;font-weight:700;margin-top:3px}}
 
 /* Tables */
-.deep-tables{{display:grid;grid-template-columns:1fr 1fr;gap:14px}}
+.deep-tables{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
 @media(max-width:600px){{.deep-tables{{grid-template-columns:1fr}}}}
 .dtable{{overflow-x:auto}}
-.dtable-title{{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}}
-.dtable-title svg{{color:#0d9488}}
-.dtable table{{width:100%;border-collapse:collapse;font-size:.74rem}}
-.dtable th{{text-align:left;font-size:.6rem;color:#475569;text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:5px 6px;border-bottom:1px solid #1e293b}}
-.dtable td{{padding:5px 6px;border-bottom:1px solid #111b2e;color:#cbd5e1}}
-.td-name{{font-weight:500;color:#e2e8f0}}
-.td-muted{{color:#64748b}}
-.dtable tbody tr:hover{{background:#111b2e}}
+.dtable-title{{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}}
+.dtable-title svg{{color:var(--accent);opacity:.6}}
+.dtable table{{width:100%;border-collapse:collapse;font-size:.76rem}}
+.dtable th{{text-align:left;font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;padding:7px 8px;border-bottom:1px solid var(--border)}}
+.dtable td{{padding:7px 8px;border-bottom:1px solid rgba(23,32,51,.6);color:var(--text-secondary)}}
+.td-name{{font-weight:500;color:var(--text-primary)}}
+.td-muted{{color:var(--text-muted)}}
+.dtable tbody tr{{transition:background .2s}}
+.dtable tbody tr:hover{{background:var(--bg-hover)}}
 
-/* ========== DISCLAIMER & FOOTER ========== */
-.disclaimer{{background:#0c1524;border:1px solid #92400e33;border-radius:12px;padding:16px 20px;margin-top:28px;display:flex;align-items:flex-start;gap:10px}}
-.disclaimer svg{{flex-shrink:0;color:#f59e0b;margin-top:2px}}
-.disclaimer p{{font-size:.72rem;color:#94a3b8;line-height:1.6}}
-.disclaimer strong{{color:#f59e0b}}
-.footer{{text-align:center;color:#334155;font-size:.65rem;margin-top:16px;padding-bottom:20px;letter-spacing:.02em}}
+/* ============================================================
+   DISCLAIMER & FOOTER
+   ============================================================ */
+.disclaimer{{background:var(--bg-card);border:1px solid rgba(146,64,14,.12);border-radius:var(--radius-sm);padding:20px 24px;margin-top:36px;display:flex;align-items:flex-start;gap:12px}}
+.disclaimer svg{{flex-shrink:0;color:var(--amber);margin-top:2px}}
+.disclaimer p{{font-size:.75rem;color:var(--text-secondary);line-height:1.7}}
+.disclaimer strong{{color:var(--amber)}}
+.footer{{text-align:center;color:var(--text-muted);font-size:.65rem;margin-top:20px;padding-bottom:24px;letter-spacing:.02em;opacity:.6}}
 
-/* ========== SCROLLBAR ========== */
-::-webkit-scrollbar{{width:6px;height:6px}}
-::-webkit-scrollbar-track{{background:#0c1524}}
-::-webkit-scrollbar-thumb{{background:#1e293b;border-radius:3px}}
-::-webkit-scrollbar-thumb:hover{{background:#334155}}
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar{{width:5px;height:5px}}
+::-webkit-scrollbar-track{{background:transparent}}
+::-webkit-scrollbar-thumb{{background:var(--border);border-radius:3px}}
+::-webkit-scrollbar-thumb:hover{{background:#2a3a52}}
 
-/* ========== TRANSITION UTILITY ========== */
-.fade-in{{animation:fadeIn .4s ease}}
-@keyframes fadeIn{{from{{opacity:0;transform:translateY(8px)}}to{{opacity:1;transform:translateY(0)}}}}
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+.reveal{{opacity:0;transform:translateY(12px);animation:reveal .5s cubic-bezier(.4,0,.2,1) forwards}}
+@keyframes reveal{{to{{opacity:1;transform:translateY(0)}}}}
+.reveal-d1{{animation-delay:.05s}} .reveal-d2{{animation-delay:.1s}} .reveal-d3{{animation-delay:.15s}} .reveal-d4{{animation-delay:.2s}} .reveal-d5{{animation-delay:.25s}} .reveal-d6{{animation-delay:.3s}}
 </style></head><body>
 
-<div class="dashboard">
+<div class="app">
 
 <!-- ===== HEADER ===== -->
-<div class="header fade-in">
+<div class="header reveal">
     <div class="header-left">
         <div class="logo-mark">{svg_activity}</div>
         <div>
-            <h1>Market Prediction Dashboard</h1>
-            <span class="header-sub">{report_date}</span>
+            <h1>Market Prediction</h1>
+            <span class="header-sub">{report_date} &middot; {report_time}</span>
         </div>
     </div>
     <div class="header-right">
-        <span class="tag tag-ml">{svg_cpu} LSTM + XGBoost Ensemble</span>
-        <span class="tag tag-live"><span class="live-dot"></span> Live Data</span>
+        <span class="tag tag-ml">{svg_cpu} LSTM + XGBoost</span>
+        <span class="tag tag-live"><span class="live-dot"></span> Live</span>
     </div>
 </div>
 
 <!-- ===== TOOLBAR ===== -->
-<div class="toolbar fade-in">
+<div class="toolbar reveal reveal-d1">
     <div class="toolbar-left">
         <span id="connStatus" style="font-size:.72rem">Connecting...</span>
-        <span style="color:#334155">|</span>
-        Last updated: <span class="gen-time" id="lastUpdate">{report_time}</span>
+        <span style="color:var(--border)">&middot;</span>
+        Updated <span class="gen-time" id="lastUpdate">{report_time}</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <label class="auto-label"><input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()"> Auto 5 min</label>
+        <label class="auto-label"><input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()"> Auto</label>
         <button class="btn btn-ghost" onclick="fetchPrices()" title="Quick price refresh">{svg_refresh} Prices</button>
-        <button class="btn btn-primary" id="refreshAll" onclick="refreshAll()">{svg_refresh} <span class="btn-text">Full Refresh</span></button>
+        <button class="btn btn-primary" id="refreshAll" onclick="refreshAll()">{svg_refresh} Refresh</button>
     </div>
 </div>
 
 <!-- ===== MARKET MOOD ===== -->
-<div class="mood-section fade-in">
+<div class="mood-section reveal reveal-d2">
     <div class="mood-card main">
         <div class="mood-label">Market Outlook</div>
         <div class="mood-value">{mood}</div>
-        <div class="mood-meta">Avg Composite Score: {avg_composite:+.2f}</div>
+        <div class="mood-meta">Composite {avg_composite:+.2f}</div>
     </div>
     <div class="mood-card">
         <div class="mood-label">Sector Breakdown</div>
         <div class="mood-breakdown">
-            <div class="mood-stat"><div class="mood-stat-val" style="color:#10b981">{bullish}</div><div class="mood-stat-label">Bullish</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:#f59e0b">{neutral}</div><div class="mood-stat-label">Neutral</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:#ef4444">{bearish}</div><div class="mood-stat-label">Bearish</div></div>
+            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--green)">{bullish}</div><div class="mood-stat-label">Bullish</div></div>
+            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--amber)">{neutral}</div><div class="mood-stat-label">Neutral</div></div>
+            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--red)">{bearish}</div><div class="mood-stat-label">Bearish</div></div>
         </div>
     </div>
     <div class="mood-card">
-        <div class="mood-label">ML Model Stats</div>
+        <div class="mood-label">ML Model Performance</div>
         <div class="mood-breakdown">
-            <div class="mood-stat"><div class="mood-stat-val" style="color:#38bdf8">{avg_acc:.0f}%</div><div class="mood-stat-label">Avg Accuracy</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:#a78bfa">{max_acc:.0f}%</div><div class="mood-stat-label">Best Model</div></div>
-            <div class="mood-stat"><div class="mood-stat-val" style="color:#94a3b8">{len(all_accs)}</div><div class="mood-stat-label">Models</div></div>
+            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--accent)">{avg_acc:.0f}%</div><div class="mood-stat-label">Avg Accuracy</div></div>
+            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--green)">{max_acc:.0f}%</div><div class="mood-stat-label">Best Model</div></div>
+            <div class="mood-stat"><div class="mood-stat-val" style="color:var(--text-secondary)">{len(all_accs)}</div><div class="mood-stat-label">Models</div></div>
         </div>
     </div>
 </div>
 
 <!-- ===== VIX STRIP ===== -->
-<div class="vix-strip fade-in">
+<div class="vix-strip reveal reveal-d3">
     <div class="vix-card">
-        <div class="vix-icon" style="background:{vix_color}18">{svg_shield}</div>
+        <div class="vix-icon" style="background:{vix_color}10">{svg_shield}</div>
         <div class="vix-info">
             <div class="vix-label">India VIX</div>
-            <div class="vix-val" style="color:{vix_color}">{vix_val:.2f} <span style="font-size:.72rem;font-weight:500">({vix_chg:+.1f}%)</span></div>
+            <div class="vix-val" style="color:{vix_color}">{vix_val:.2f} <span style="font-size:.72rem;font-weight:400;color:var(--text-muted)">({vix_chg:+.1f}%)</span></div>
         </div>
     </div>
     <div class="vix-card">
-        <div class="vix-icon" style="background:{vix_color}18">{svg_activity}</div>
+        <div class="vix-icon" style="background:{vix_color}10">{svg_activity}</div>
         <div class="vix-info">
-            <div class="vix-label">Fear Status</div>
+            <div class="vix-label">Fear Level</div>
             <div class="vix-val" style="color:{vix_color}">{vix_status}</div>
         </div>
     </div>
     <div class="vix-card">
-        <div class="vix-icon" style="background:#38bdf818">{svg_shield}</div>
+        <div class="vix-icon" style="background:rgba(59,130,246,.08)">{svg_shield}</div>
         <div class="vix-info">
             <div class="vix-label">US VIX</div>
-            <div class="vix-val">{us_vix_val:.2f} <span style="font-size:.72rem;font-weight:500;color:#64748b">({us_vix_chg:+.1f}%)</span></div>
+            <div class="vix-val">{us_vix_val:.2f} <span style="font-size:.72rem;font-weight:400;color:var(--text-muted)">({us_vix_chg:+.1f}%)</span></div>
         </div>
     </div>
 </div>
 
 <!-- ===== BROAD MARKET ===== -->
-<div class="broad-row fade-in">{broad_cards}</div>
+<div class="broad-row reveal reveal-d3">{broad_cards}</div>
 
 <!-- ===== GLOBAL MARKETS ===== -->
-<div class="sec-head"><h2>{svg_globe} Global Markets &mdash; Overnight Cues</h2><button class="btn btn-ghost" onclick="refreshSection('global')">{svg_refresh} Refresh</button></div>
-<div id="global-section" class="fade-in">
-    <div class="sub-label">US Markets</div><div class="mkt-grid">{us_html}</div>
-    <div class="sub-label">European Markets</div><div class="mkt-grid">{eu_html}</div>
-    <div class="sub-label">Asian Markets</div><div class="mkt-grid">{asia_html}</div>
+<div class="sec-head"><h2>{svg_globe} Global Markets</h2><button class="btn btn-ghost" onclick="refreshSection('global')">{svg_refresh}</button></div>
+<div id="global-section" class="reveal reveal-d4">
+    <div class="sub-label">United States</div><div class="mkt-grid">{us_html}</div>
+    <div class="sub-label">Europe</div><div class="mkt-grid">{eu_html}</div>
+    <div class="sub-label">Asia Pacific</div><div class="mkt-grid">{asia_html}</div>
     <div class="sub-label">Commodities &amp; Forex</div><div class="mkt-grid">{comm_html}</div>
 </div>
 
 <!-- ===== CHINA & JAPAN ===== -->
-<div class="sec-head"><h2>{svg_globe} Japan &amp; China Major Stocks</h2><button class="btn btn-ghost" onclick="refreshSection('chinajapan')">{svg_refresh} Refresh</button></div>
-<div class="intl-section fade-in">
+<div class="sec-head"><h2>{svg_globe} Japan &amp; China</h2><button class="btn btn-ghost" onclick="refreshSection('chinajapan')">{svg_refresh}</button></div>
+<div class="intl-section reveal reveal-d4">
     <div class="sub-label">Japan (TSE)</div><div class="intl-grid">{japan_html}</div>
-    <div class="sub-label" style="margin-top:16px">China / Hong Kong (HKEX)</div><div class="intl-grid">{china_html}</div>
+    <div class="sub-label" style="margin-top:18px">China &amp; Hong Kong (HKEX)</div><div class="intl-grid">{china_html}</div>
 </div>
 
 <!-- ===== SECTOR HEATMAP ===== -->
-<div class="sec-head"><h2>{svg_bar_chart} Sector Prediction Heatmap</h2><button class="btn btn-ghost" onclick="refreshSection('sectors')">{svg_refresh} Refresh</button></div>
-<div class="hm-grid fade-in">{heatmap_html}</div>
+<div class="sec-head"><h2>{svg_bar_chart} Sector Predictions</h2><button class="btn btn-ghost" onclick="refreshSection('sectors')">{svg_refresh}</button></div>
+<div class="hm-grid reveal reveal-d5">{heatmap_html}</div>
 
 <!-- ===== SECTOR DEEP DIVE ===== -->
-<div class="sec-head"><h2>{svg_cpu} Sector Deep Dive &mdash; ML + Global Analysis</h2></div>
-<div class="deep-grid fade-in">{sector_cards_html}</div>
+<div class="sec-head"><h2>{svg_cpu} Sector Deep Dive</h2></div>
+<div class="deep-grid reveal reveal-d6">{sector_cards_html}</div>
 
 <!-- ===== DISCLAIMER ===== -->
-<div class="disclaimer fade-in">
+<div class="disclaimer reveal">
     {svg_alert}
-    <p><strong>Disclaimer:</strong> This is an ML-based analysis tool for educational purposes only. LSTM and XGBoost models are trained on historical data and cannot predict black-swan events. Model accuracy shown is on historical validation data. Always do your own research and consult a SEBI-registered advisor before making investment decisions.</p>
+    <p><strong>Disclaimer:</strong> This is an ML-based analysis tool for educational purposes only. Models are trained on historical data and cannot predict black-swan events. Accuracy figures are from validation data. Do your own research and consult a SEBI-registered advisor.</p>
 </div>
-<div class="footer">Market Prediction Bot v4 &bull; LSTM + XGBoost Ensemble &bull; Data: TradingView (Real-Time) &bull; TensorFlow + scikit-learn + XGBoost</div>
+<div class="footer">v4 &middot; LSTM + XGBoost Ensemble &middot; TradingView Data &middot; TensorFlow + scikit-learn</div>
 
-</div><!-- /dashboard -->
+</div><!-- /app -->
 
 <script>
 /* ===== REAL-TIME PRICE UPDATE ENGINE ===== */
@@ -773,12 +851,12 @@ const DN_SVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke
 
 function fmt(n){{return n.toLocaleString('en-IN',{{minimumFractionDigits:2,maximumFractionDigits:2}})}}
 function pctFmt(n){{return(n>=0?'+':'')+n.toFixed(2)+'%'}}
-function clr(n){{return n>=0?'#10b981':'#ef4444'}}
+function clr(n){{return n>=0?'#22c55e':'#ef4444'}}
 function arrow(n){{return n>=0?UP_SVG:DN_SVG}}
 
 function flashCard(el){{
     el.style.transition='none';
-    el.style.boxShadow='0 0 12px rgba(14,165,233,.35)';
+    el.style.boxShadow='0 0 16px rgba(59,130,246,.2)';
     setTimeout(()=>{{el.style.transition='box-shadow .8s ease';el.style.boxShadow='none'}},50);
 }}
 
@@ -840,7 +918,7 @@ async function fetchPrices(){{
                         if(old!==nv.replace(/,/g,'')){{
                             td.textContent=nv;
                             td.style.transition='none';
-                            td.style.color='#38bdf8';
+                            td.style.color='#3b82f6';
                             setTimeout(()=>{{td.style.transition='color .8s';td.style.color='#cbd5e1'}},50);
                         }}
                     }}
