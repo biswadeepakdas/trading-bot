@@ -1,0 +1,22 @@
+# Heavy ML files — not needed on Vercel
+models/
+data/
+__pycache__/
+*.pyc
+
+# Local-only Python files (ML pipeline)
+lstm_model.py
+features.py
+backtester.py
+live_server.py
+run_prediction.py
+config.py
+
+# Reports (dashboard goes to public/)
+reports/
+
+# Misc
+*.log
+.env
+.DS_Store
+.git

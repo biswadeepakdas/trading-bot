@@ -5,3 +5,4 @@ data/
 reports/*.html
 *.log
 .env
+.vercel

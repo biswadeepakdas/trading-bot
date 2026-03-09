@@ -1,8 +1,3 @@
-tensorflow>=2.13
-xgboost>=2.0
-scikit-learn>=1.3
-pandas>=2.0
-numpy>=1.24
-pandas-ta>=0.3.14b1
-vmdpy>=0.2
-tvDatafeed @ git+https://github.com/rongardF/tvdatafeed.git
+# Vercel serverless dependencies (lightweight — API functions only)
+# The prices API uses only urllib (built-in), so no extra deps needed.
+# This file exists to satisfy Vercel's Python runtime requirement.

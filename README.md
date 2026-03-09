@@ -7,7 +7,8 @@ An ensemble ML trading bot that predicts next-day direction and magnitude for In
 - **LSTM + XGBoost Ensemble** — Self-attention LSTM with VMD denoising + regularized XGBoost, adaptively weighted
 - **33 Trained Models** — Covers NIFTY 50, BANKNIFTY, and 31 NSE stocks across 8 sectors
 - **Global Market Integration** — Correlates 25+ global indices, commodities, forex, and volatility indicators
-- **Real-Time Dashboard** — Professional fintech-grade HTML dashboard with live price updates via TradingView
+- **Real-Time Dashboard** — Professional fintech-grade HTML dashboard with live price updates
+- **Vercel Deployable** — One-click deploy with serverless price API
 - **~70% Average Accuracy** — Validated on historical data with 15-year training window
 
 ## Architecture
@@ -18,9 +19,14 @@ config.py                # Sectors, global markets, hyperparameters
 features.py              # Data fetching (TradingView) + 80+ technical indicators
 lstm_model.py            # AttentionLSTM + XGBoost + adaptive ensemble
 backtester.py            # Strategy backtesting engine
-live_server.py           # HTTP server for real-time dashboard updates
+live_server.py           # Local HTTP server for real-time dashboard updates
+api/                     # Vercel serverless functions
+  prices.py              # Live price API (Yahoo Finance, zero deps)
+  status.py              # Health check endpoint
+public/                  # Vercel static site root
+  index.html             # Generated dashboard (auto-deployed)
 models/                  # Pre-trained model weights (.keras, .pkl)
-reports/                 # Generated HTML dashboards
+reports/                 # Generated HTML dashboards (local)
 ```
 
 ## Sectors Covered
@@ -38,19 +44,38 @@ reports/                 # Generated HTML dashboards
 
 ## Quick Start
 
+### Option 1: Deploy to Vercel (Recommended)
+
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy (from project root)
+vercel
+
+# That's it! Dashboard + live prices API deployed instantly.
+```
+
+### Option 2: Run Locally
+
+```bash
+# Install ML dependencies
+pip install -r requirements-local.txt
 
 # Run daily prediction (uses pre-trained models)
 python run_prediction.py
 
-# Retrain all models (takes ~30 min)
-python run_prediction.py --train
-
 # Start live dashboard with real-time price updates
 python live_server.py
 # Open http://localhost:8080
+```
+
+### Updating Predictions
+
+Predictions are baked into the dashboard at generation time. To refresh:
+```bash
+python run_prediction.py          # Regenerates public/index.html with fresh ML predictions
+vercel --prod                     # Redeploy to Vercel
 ```
 
 ## Model Details
@@ -72,7 +97,16 @@ The dashboard shows:
 - Sector prediction heatmap with expected magnitude
 - Deep-dive cards with global drivers and per-stock ML predictions
 
-When `live_server.py` is running, prices auto-update every 30 seconds.
+**Live prices auto-update every 30 seconds** — powered by Vercel serverless functions (deployed) or live_server.py (local).
+
+## Vercel Deployment
+
+The project is Vercel-ready out of the box:
+- `public/index.html` — Static dashboard (served as the main page)
+- `api/prices.py` — Serverless function fetches live prices from Yahoo Finance (zero external deps)
+- `api/status.py` — Health check endpoint
+- `.vercelignore` — Excludes heavy ML files (models, TensorFlow, etc.) from deployment
+- `vercel.json` — Routing and function configuration
 
 ## Disclaimer
 

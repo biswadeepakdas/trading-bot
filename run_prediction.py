@@ -762,7 +762,9 @@ body{{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#050a14;
 
 <script>
 /* ===== REAL-TIME PRICE UPDATE ENGINE ===== */
-const SERVER='http://localhost:8080';
+// Auto-detect: use localhost when local, relative URLs on Vercel
+const IS_LOCAL=location.hostname==='localhost'||location.hostname==='127.0.0.1';
+const SERVER=IS_LOCAL?'http://localhost:8080':'';
 let priceTimer=null;
 let autoTimer=null;
 let isLive=false;
@@ -803,7 +805,7 @@ async function fetchPrices(){{
     try{{
         const r=await fetch(SERVER+'/api/prices',{{signal:AbortSignal.timeout(60000)}});
         const data=await r.json();
-        if(data.status!=='ok')return;
+        if(data.error)return;
 
         // Update global market cards
         if(data.global){{
@@ -855,6 +857,7 @@ async function fetchPrices(){{
 }}
 
 function refreshAll(){{
+    if(!IS_LOCAL){{fetchPrices();return;}}
     const btn=document.getElementById('refreshAll');
     btn.classList.add('loading');
     fetch(SERVER+'/api/refresh',{{signal:AbortSignal.timeout(180000)}})
@@ -885,8 +888,16 @@ fetch(SERVER+'/api/status',{{signal:AbortSignal.timeout(3000)}}).then(r=>r.json(
     fetchPrices();
     priceTimer=setInterval(fetchPrices,30000);
 }}).catch(()=>{{
-    const s=document.getElementById('connStatus');
-    if(s)s.innerHTML='<span style="color:#64748b">Start live_server.py for real-time updates</span>';
+    if(!IS_LOCAL){{
+        // On Vercel: prices API is always available via serverless function
+        fetchPrices();
+        priceTimer=setInterval(fetchPrices,30000);
+        const s=document.getElementById('connStatus');
+        if(s)s.innerHTML='<span class="live-dot"></span> Vercel Live';
+    }}else{{
+        const s=document.getElementById('connStatus');
+        if(s)s.innerHTML='<span style="color:#64748b">Start live_server.py for real-time updates</span>';
+    }}
 }});
 </script>
 </body></html>"""
@@ -895,11 +906,18 @@ fetch(SERVER+'/api/status',{{signal:AbortSignal.timeout(3000)}}).then(r=>r.json(
     dated = os.path.join(OUTPUT_DIR, f'prediction_{date_str}.html')
     latest = os.path.join(OUTPUT_DIR, 'prediction_latest.html')
 
-    for path in [dated, latest]:
+    # Also save to public/index.html for Vercel deployment
+    _base = os.path.dirname(os.path.abspath(__file__))
+    public_dir = os.path.join(_base, 'public')
+    os.makedirs(public_dir, exist_ok=True)
+    public_index = os.path.join(public_dir, 'index.html')
+
+    for path in [dated, latest, public_index]:
         with open(path, 'w') as f:
             f.write(html)
 
     print(f"\n  Reports saved to {OUTPUT_DIR}/")
+    print(f"  Vercel dashboard saved to public/index.html")
 
 
 # ============================================================
